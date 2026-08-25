@@ -2,7 +2,7 @@
 
 #include "utility.h"
 
-BEGIN_GAIA_MATH
+BEGIN_GAIA
 
 template<typename Number_t>
 class Vector2
@@ -47,4 +47,4 @@ using Vector2d = Vector2<double>;
 using Vector3d = Vector3<double>;
 using Vector4d = Vector4<double>;
 
-END_GAIA_MATH
+END_GAIA

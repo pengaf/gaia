@@ -1,8 +1,8 @@
 #pragma once
 #include "./vk1/view.h"
 
-BEGIN_GAIA_GRAPHICS
+BEGIN_GAIA
 
 using ShaderResourceView = vk1::ShaderResourceView;
 
-END_GAIA_GRAPHICS
+END_GAIA

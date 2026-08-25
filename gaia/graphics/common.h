@@ -1,17 +1,154 @@
 #pragma once
+
 #include "utility.h"
 #include "../bit_mask_enum.h"
+#include <string>
 
-BEGIN_GAIA_GRAPHICS
+BEGIN_GAIA
 
 const uint32_t gaia_max_vertex_buffer_bind_count = 8; //webgpu 8, d3d12 32, vulkan 16, metal 31
 const uint32_t gaia_max_swapchain_image_count = 4;
 
+enum class TextureFormat
+{
+    // 8 bit formats
+    r8_unorm,
+    r8_snorm,
+    r8_uint,
+    r8_sint,
+    // 16 bit formats
+    r16_unorm,
+    r16_snorm,
+    r16_uint,
+    r16_sint,
+    r16_float,
+    rg8_unorm,
+    rg8_snorm,
+    rg8_uint,
+    rg8_sint,
+    // 32 bit formats
+    r32_uint,
+    r32_sint,
+    r32_float,
+    rg16_unorm,
+    rg16_snorm,
+    rg16_uint,
+    rg16_sint,
+    rg16_float,
+    rgba8_unorm,
+    rgba8_unorm_srgb,
+    rgba8_snorm,
+    rgba8_uint,
+    rgba8_sint,
+    bgra8_unorm,
+    bgra8_unorm_srgb,
+    // Packed 32 bit formats
+    rgb9e5u_float,
+    rgb10a2_uint,
+    rgb10a2_unorm,
+    rg11b10u_float,
+    // 64 bit formats
+    rg32_uint,
+    rg32_sint,
+    rg32_float,
+    rgba16_unorm,
+    rgba16_snorm,
+    rgba16_uint,
+    rgba16_sint,
+    rgba16_float,
+    // 128 bit formats
+    rgba32_uint,
+    rgba32_sint,
+    rgba32_float,
+    // Depth/stencil formats
+    stencil8,
+    depth16_unorm,
+    depth24plus,
+    depth24plus_stencil8,
+    depth32_float,
+    depth32_float_stencil8,
+    // BC compressed formats
+    bc1_rgba_unorm,
+    bc1_rgba_unorm_srgb,
+    bc2_rgba_unorm,
+    bc2_rgba_unorm_srgb,
+    bc3_rgba_unorm,
+    bc3_rgba_unorm_srgb,
+    bc4_r_unorm,
+    bc4_r_snorm,
+    bc5_rg_unorm,
+    bc5_rg_snorm,
+    bc6h_rgb_u_float,
+    bc6h_rgb_float,
+    bc7_rgba_unorm,
+    bc7_rgba_unorm_srgb,
+    // ETC2 compressed formats
+    etc2_rgb8_unorm,
+    etc2_rgb8_unorm_srgb,
+    etc2_rgb8a1_unorm,
+    etc2_rgb8a1_unorm_srgb,
+    etc2_rgba8_unorm,
+    etc2_rgba8_unorm_srgb,
+    eac_r11_unorm,
+    eac_r11_snorm,
+    eac_rg11_unorm,
+    eac_rg11_snorm,
+    // ASTC compressed formats
+    astc_4x4_unorm,
+    astc_4x4_unorm_srgb,
+    astc_5x4_unorm,
+    astc_5x4_unorm_srgb,
+    astc_5x5_unorm,
+    astc_5x5_unorm_srgb,
+    astc_6x5_unorm,
+    astc_6x5_unorm_srgb,
+    astc_6x6_unorm,
+    astc_6x6_unorm_srgb,
+    astc_8x5_unorm,
+    astc_8x5_unorm_srgb,
+    astc_8x6_unorm,
+    astc_8x6_unorm_srgb,
+    astc_8x8_unorm,
+    astc_8x8_unorm_srgb,
+    astc_10x5_unorm,
+    astc_10x5_unorm_srgb,
+    astc_10x6_unorm,
+    astc_10x6_unorm_srgb,
+    astc_10x8_unorm,
+    astc_10x8_unorm_srgb,
+    astc_10x10_unorm,
+    astc_10x10_unorm_srgb,
+    astc_12x10_unorm,
+    astc_12x10_unorm_srgb,
+    astc_12x12_unorm,
+    astc_12x12_unorm_srgb,
+    count,
+};
+
+
+enum class ShaderType
+{
+    vertex,
+    fragment,
+    geometry,
+    hull,
+    domain,
+    compute,
+    mesh,
+    amplification,
+    ray_generation,
+    intersection,
+    any_hit,
+    closest_hit,
+    miss,
+    callable,
+};
+
 enum class CpuAccess
 {
-    indirect_write,
-    direct_write,
-    direct_read,
+    none,
+    read,
+    write,
 };
 
 enum class BufferUsage
@@ -24,7 +161,7 @@ enum class BufferUsage
     vertex = 0x0020,
     indirect = 0x0040,
     query_resolve = 0x0080,
-}；
+};
 
 ENABLE_BITMASK(BufferUsage)
 
@@ -38,7 +175,7 @@ enum class TextureUsage
     depth_stencil = 0x0020,
     input = 0x0040,
     transient = 0x0080,
-}；
+};
 
 ENABLE_BITMASK(TextureUsage)
 
@@ -179,7 +316,7 @@ enum class MipmapMode
     linear
 };
 
-typedef enum BorderColor
+enum class BorderColor
 {
     transparent_black,
     opaque_black,
@@ -188,12 +325,24 @@ typedef enum BorderColor
     opaque_white_uint
 };
 
-
 struct BufferDesc
 {
-	uint64_t size;
-	BufferUsage bufferUsage;
-	CpuAccess cpuAccess;
+    uint64_t size;
+    BufferUsage bufferUsage;
+    CpuAccess cpuAccess;
+};
+
+struct TextureDesc
+{
+    uint32_t width;
+    uint32_t height;
+    uint32_t depth;
+    uint32_t mipLevels;
+    uint32_t arrayLayers;
+    TextureDimension dimension;
+    TextureFormat format;
+    TextureUsage textureUsage;
+    CpuAccess cpuAccess;
 };
 
 struct SamplerState 
@@ -386,5 +535,5 @@ struct DrawCall
     };
 };
 
-END_GAIA_RHI
+END_GAIA
 

@@ -1,6 +1,7 @@
 #include "buffer.h"
+#include "render_system.h"
 
-BEGIN_GAIA_GRAPHICS_VK1
+BEGIN_GAIA_VK1
 
 VkBufferUsageFlags MappingBufferUsage(BufferUsage bufferUsage)
 {
@@ -35,26 +36,26 @@ VkBufferUsageFlags MappingBufferUsage(BufferUsage bufferUsage)
 	}
 	if ((bufferUsage & BufferUsage::query_resolve) != BufferUsage(0))
 	{
-		result |= VK_BUFFER_USAGE_QUERY_RESULT_BUFFER_BIT;
+		result |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 	}
 	return result;
 };
 
 
-RefPtr<Buffer> New(RenderSystem* renderSystem, uint64_t size, BufferUsage bufferUsage, CpuAccess cpuAccess)
+RefPtr<Buffer> Buffer::New(RenderSystem* renderSystem, const BufferDesc& desc)
 {
 	VkBufferCreateInfo bufferCreateInfo
 	{
 		.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-		.size = size,
-		.usage = MappingBufferUsage(bufferUsage),
+		.size = desc.size,
+		.usage = MappingBufferUsage(desc.bufferUsage),
 		.sharingMode = VK_SHARING_MODE_EXCLUSIVE
 	};
 
 	VmaAllocationCreateInfo allocationCreateInfo = {};
 	allocationCreateInfo.flags = 0;
 
-	switch (cpuAccess) 
+	switch (desc.cpuAccess)
 	{
 	case CpuAccess::none:
 		allocationCreateInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
@@ -70,7 +71,7 @@ RefPtr<Buffer> New(RenderSystem* renderSystem, uint64_t size, BufferUsage buffer
 	}
 
 	const uint64_t big_resource_threshold = 1024 * 1024 * 32;
-	if (size > big_resource_threshold) 
+	if (desc.size > big_resource_threshold)
 	{
 		allocationCreateInfo.flags |= VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT;
 	}
@@ -79,20 +80,22 @@ RefPtr<Buffer> New(RenderSystem* renderSystem, uint64_t size, BufferUsage buffer
 	VmaAllocation allocation = VK_NULL_HANDLE;
 	VmaAllocationInfo allocationInfo = {};
 	
-	VkResult result = vmaCreateBuffer(renderSystem->allocator(), &bufferCreateInfo, &allocationCreateInfo, &m_buffer, &m_allocation, &m_allocInfo);
+	VkResult result = vmaCreateBuffer(renderSystem->allocator(), &bufferCreateInfo, &allocationCreateInfo, &buffer, &allocation, &allocationInfo);
 
 	if (result != VK_SUCCESS)
 	{
 		return nullptr;
 	}
 
-	return RefPtr<Buffer>(new Buffer(VK_NULL_HANDLE, VMA_NULL_HANDLE, renderSystem, size));
+	return RefPtr<Buffer>(new Buffer(VK_NULL_HANDLE, allocation, renderSystem, desc.size));
 }
 
-Buffer::Buffer(RenderSystem* renderSystem)
-	: m_renderSystem(renderSystem)
+Buffer::Buffer(VkBuffer buffer, VmaAllocation allocation, RenderSystem* renderSystem, VkDeviceSize size) :
+	m_buffer(buffer),
+	m_allocation(allocation),
+	m_renderSystem(renderSystem),
+	m_size(size)
 {
 }
 
-
-END_GAIA_GRAPHICS_VK1
+END_GAIA_VK1

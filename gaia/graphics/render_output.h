@@ -1,11 +1,12 @@
 #pragma once
 
 #include "utility.h"
+#include "hal/hal_fwd.h"
+#include "pass.h"
 
-BEGIN_GAIA_GRAPHICS
+BEGIN_GAIA
 
-class RenderTargetView;
-class Pass;
+//class Pass;
 
 class RenderOutput
 {
@@ -16,4 +17,4 @@ protected:
 	RefPtr<Pass> m_pass;
 };
 
-END_GAIA_GRAPHICS
+END_GAIA

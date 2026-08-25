@@ -4,14 +4,7 @@
 #include <string>
 #include <compare>
 
-
 BEGIN_GAIA
-
-namespace graphics
-{
-	class Mesh;
-}
-using Mesh = graphics::Mesh;
 
 class UnitMeshSource : public MeshSource
 {
@@ -34,15 +27,40 @@ public:
 
 	class UnitMeshParam : public pafcore::Object
 	{
+	public:
 		UnitMeshType type;
 		bool normal{ false };
 		bool texcoord{ false };
 		bool wire{ false };
 		pafcore::ObserverPtr<UnitMeshSource> m_unitMeshSource;
+	public:
+		std::strong_ordering operator<=>(const UnitMeshParam& other) const
+		{
+			return std::tie(normal, texcoord, wire) <=> std::tie(other.normal, other.texcoord, other.wire);
+			//GAIA_ASSERT(type == other.type);
+			//std::strong_ordering cmp = type <=> other.type;
+			//if (cmp != std::strong_ordering::equal)
+			//{
+			//	return cmp;
+			//}
+			//cmp = normal <=> other.normal;
+			//if (cmp != std::strong_ordering::equal)
+			//{
+			//	return cmp;
+			//}
+			//cmp = texcoord <=> other.texcoord;
+			//if (cmp != std::strong_ordering::equal)
+			//{
+			//	return cmp;
+			//}
+			//cmp = wire <=> other.wire;
+			//return cmp;
+		}
 	};
 
 	class CircleParam : public UnitMeshParam
 	{
+	public:
 		uint32_t segments{ 256 };
 
 		std::strong_ordering operator<=>(const CircleParam& other) const
@@ -55,11 +73,11 @@ public:
 			cmp = segments <=> other.segments;
 			return cmp;
 		}
-		bool operator==(const CircleParam& other) const
-		{
-			return UnitMeshParam::operator==(other)
-				&& segments == other.segments;
-		}
+		//bool operator==(const CircleParam& other) const
+		//{
+		//	return UnitMeshParam::operator==(other)
+		//		&& segments == other.segments;
+		//}
 	};
 
 	class RegularPolygonParam : public UnitMeshParam

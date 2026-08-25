@@ -2,7 +2,7 @@
 
 #include "vector.h"
 
-BEGIN_GAIA_MATH
+BEGIN_GAIA
 
 template<typename Number_t>
 class Matrix2x2
@@ -74,15 +74,15 @@ using AffineTransform3fd = AffineTransform3<float, double>;
 
 
 #if GAIA_HIGH_PRECISION_POSITION_2D
-using AffineTransform2fd = AffineTransform2D
+using AffineTransform2D = AffineTransform2fd;
 #else
-using AffineTransform2f = AffineTransform2D
+using AffineTransform2D = AffineTransform2f;
 #endif
 
 #if GAIA_HIGH_PRECISION_POSITION_3D
-using AffineTransform3fd = AffineTransform3D
+using AffineTransform3D = AffineTransform3fd;
 #else
-using AffineTransform3f = AffineTransform3D
+using AffineTransform3D = AffineTransform3f;
 #endif
 
-END_GAIA_MATH
+END_GAIA

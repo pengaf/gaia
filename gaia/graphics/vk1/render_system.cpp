@@ -1,8 +1,19 @@
 #include "render_system.h"
+#include "render_window.h"
 #include "shader.h"
 #include <vector>
+#include <iostream>
 
-BEGIN_GAIA_GRAPHICS_VK1
+BEGIN_GAIA_VK1
+
+VKAPI_ATTR VkBool32 DebugUtilsMessageCallback(
+	VkDebugUtilsMessageSeverityFlagBitsEXT      messageSeverity,
+	VkDebugUtilsMessageTypeFlagsEXT             messageTypes,
+	const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+	void* pUserData)
+{
+	return true;
+}
 
 std::vector<std::string> EnumerateInstanceExtensions()
 {
@@ -163,6 +174,7 @@ auto FindQueueFamilyIndices(VkPhysicalDevice physicalDevice, bool preferPerforma
 
 RenderSystem* RenderSystem::New()
 {
+	return new RenderSystem();
 }
 
 RenderSystem::~RenderSystem()
@@ -233,7 +245,7 @@ bool RenderSystem::initialize(const RenderSystemConfig& config)
 		.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
 		.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT,
 		.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT,
-		.pfnUserCallback = debugUtilsMessageCallback
+		.pfnUserCallback = DebugUtilsMessageCallback
 	};
 
 	if (config.debug)
@@ -342,7 +354,7 @@ bool RenderSystem::initialize(const RenderSystemConfig& config)
 	VkPhysicalDeviceFeatures2 features2{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2 };
 	VkPhysicalDeviceVulkan13Features vulkan13Features{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES };
 	features2.pNext = &vulkan13Features;
-	vkGetPhysicalDeviceFeatures2(context.gpu, &features2);
+	vkGetPhysicalDeviceFeatures2(physicalDevice, &features2);
 
 	if (!vulkan13Features.dynamicRendering)
 	{
@@ -426,7 +438,7 @@ bool RenderSystem::initialize(const RenderSystemConfig& config)
 
 	std::vector<const char*> deviceExtensions = { VK_KHR_SURFACE_EXTENSION_NAME };
 
-	std::vector<std::string> supportedDeviceExtensions = EnumerateDeviceExtensions();
+	std::vector<std::string> supportedDeviceExtensions = EnumerateDeviceExtensions(physicalDevice);
 
 	for (const char* enabledDeviceExtension : enabledDeviceExtensions)
 	{
@@ -494,8 +506,9 @@ bool RenderSystem::initialize(const RenderSystemConfig& config)
 			VkCommandPoolCreateInfo commandPoolCreateInfo
 			{
 				.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+				.pNext = nullptr,
+				.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
 				.queueFamilyIndex = queueFamilyIndices.graphics,
-				.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT
 			};
 			result = vkCreateCommandPool(device, &commandPoolCreateInfo, nullptr, &recordThread.commandPool);
 			if (result != VK_SUCCESS)
@@ -518,6 +531,7 @@ bool RenderSystem::initialize(const RenderSystemConfig& config)
 			}
 		}
 	}
+	return true;
 }
 	
 VertexShader* RenderSystem::createVertexShader(const char* code, size_t codeSize, const char* entryPoint)
@@ -527,7 +541,7 @@ VertexShader* RenderSystem::createVertexShader(const char* code, size_t codeSize
 
 RenderWindow* RenderSystem::createRenderWindow(void* platformHandle)
 {
-	return new RenderWindow(platformHandle);
+	return RenderWindow::New(platformHandle);
 }
 
 void RenderSystem::render(VertexShaderElement* graphicsElements)
@@ -535,4 +549,4 @@ void RenderSystem::render(VertexShaderElement* graphicsElements)
 
 }
 
-END_GAIA_GRAPHICS_VK1
+END_GAIA_VK1

@@ -2,7 +2,7 @@
 #include "utility.h"
 #include "vulkan.h"
 
-BEGIN_GAIA_VK1_DETAIL
+BEGIN_GAIA_VK1
 
 class RenderWindow;
 
@@ -12,7 +12,7 @@ public:
 	SingleThreadRenderScheduler();
 	~SingleThreadRenderScheduler();
 public:
-	void render(const RenderWindow** renderWindows, uint32_t count);
+	void render(RenderWindow** renderWindows, uint32_t count);
 };
 
-END_GAIA_VK1_DETAIL
+END_GAIA_VK1

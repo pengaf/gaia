@@ -9,5 +9,5 @@
 #define VK_USE_PLATFORM_WAYLAND_KHR
 #endif
 
-#define BEGIN_GAIA_GRAPHICS_VK1 namespace gaia { namespace graphics { namespace vk1 {
-#define END_GAIA_GRAPHICS_VK1 } }
+#define BEGIN_GAIA namespace gaia { namespace graphics { namespace vk1 {
+#define END_GAIA } }

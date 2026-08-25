@@ -3,7 +3,7 @@
 #include "renderable.h"
 #include "../math/matrix.h"
 
-BEGIN_GAIA_GRAPHICS
+BEGIN_GAIA
 
 using math::AffineTransform2D;
 
@@ -13,4 +13,4 @@ protected:
 	AffineTransform2D m_worldTransform;
 };
 
-END_GAIA_GRAPHICS
+END_GAIA

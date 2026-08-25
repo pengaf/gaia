@@ -1,14 +1,9 @@
 #pragma once
 #include "utility.h"
+#include "hal/hal_fwd.h"
 #include <vector>
 
-BEGIN_GAIA_GRAPHICS
-
-class RenderElement;
-class VertexShaderElement;
-class MeshShaderElement;
-class ComputeElement;
-class RayTracingElement;
+BEGIN_GAIA
 
 enum class PassType
 {
@@ -51,4 +46,4 @@ protected:
 };
 
 
-END_GAIA_GRAPHICS
+END_GAIA

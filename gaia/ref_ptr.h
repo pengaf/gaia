@@ -7,14 +7,14 @@ BEGIN_GAIA
 #define GAIA_REF_COUNT_IMPL \
 		int32_t m_refCount;\
 	public:\
-		long_t addRef(){return ++m_refCount;}\
-		long_t release(){long_t refCount = --m_refCount; if(0 == refCount) delete this; return refCount;}
+		long_t incRef(){return ++m_refCount;}\
+		long_t decRef(){long_t refCount = --m_refCount; if(0 == refCount) delete this; return refCount;}
 
 #define GAIA_ATOMIC_REF_COUNT_IMPL \
 		std::atomic<int32_t> m_refCount;\
 	public:\
-		int32_t addRef(){return ++m_refCount;}\
-		int32_t release(){int32_t refCount = --m_refCount; if(0 == refCount) delete this; return refCount;}
+		int32_t incRef(){return ++m_refCount;}\
+		int32_t decRef(){int32_t refCount = --m_refCount; if(0 == refCount) delete this; return refCount;}
 
 
 template<typename T>
@@ -68,6 +68,10 @@ class RefPtr
 {
 public:
 	RefPtr() = default;
+
+	RefPtr(nullptr_t) :
+		m_ptr(nullptr)
+	{}
 
 	explicit RefPtr(T* ptr) noexcept : 
 		m_ptr(ptr)

@@ -2,7 +2,7 @@
 #include "utility.h"
 #include "detail/vulkan.h"
 
-BEGIN_GAIA_GRAPHICS_VK1
+BEGIN_GAIA_VK1
 
 class GraphicsPipeline
 {	
@@ -19,4 +19,4 @@ private:
 	VkPipelineRasterizationStateCreateInfo m_rasterizerState{};
 };
 
-END_GAIA_GRAPHICS_VK1
+END_GAIA_VK1

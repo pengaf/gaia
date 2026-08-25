@@ -1,12 +1,9 @@
 #pragma once
 #include "render_element.h"
 #include "../common.h"
+#include "detail/vulkan.h"
 
-BEGIN_GAIA_GRAPHICS_VK1
-
-class GraphicsPipeline;
-class Material;
-class Mesh;
+BEGIN_GAIA_VK1
 
 struct VertexBufferSet
 {
@@ -24,7 +21,7 @@ struct VertexBufferSet
 		for (uint32_t i = 0; i < bindingCount; ++i)
 		{
 			if (buffers[i] != other.buffers[i] ||
-				offsets[i] != othre.offsets[i])
+				offsets[i] != other.offsets[i])
 			{
 				return false;
 			}
@@ -65,6 +62,14 @@ struct IndexBuffer
 			&& type == other.type;
 	}
 };
+
+class GraphicsPipeline;
+class Material;
+class Mesh;
+class Buffer;
+class ShaderResourceView;
+class RenderSystem;
+class GraphicsPipelineState;
 
 class VertexShaderElement : public RenderElement
 {
@@ -107,4 +112,4 @@ public:
 };
 
 
-END_GAIA_GRAPHICS_VK1
+END_GAIA_VK1

@@ -1,11 +1,11 @@
 #pragma once
 #include "utility.h"
 
-BEGIN_GAIA_GRAPHICS
+BEGIN_GAIA
 
 class FrameGraph
 {
 
 };
 
-END_GAIA_GRAPHICS
+END_GAIA

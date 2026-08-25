@@ -1,6 +1,7 @@
 #include "pass.h"
+#include "hal/render_element.h"
 
-BEGIN_GAIA_GRAPHICS
+BEGIN_GAIA
 
 void RenderPassBase::addRenderElement(RenderElement* element)
 {
@@ -30,4 +31,4 @@ void RayTracingPassBase::addRayTracingElement(RayTracingElement* element)
 	m_elements.push_back(element);
 }
 
-END_GAIA_GRAPHICS
+END_GAIA

@@ -4,7 +4,9 @@
 #include "detail/vulkan.h"
 #include "detail/vk_mem_alloc.h"
 
-BEGIN_GAIA_GRAPHICS_VK1
+BEGIN_GAIA_VK1
+
+class RenderSystem;
 
 class Buffer
 {
@@ -31,4 +33,4 @@ private:
 	RefPtr<Buffer> New(RenderSystem* renderSystem, const BufferDesc& desc);
 };
 
-END_GAIA_GRAPHICS_VK1
+END_GAIA_VK1

@@ -1,7 +1,7 @@
 #pragma once
 #include "utility.h"
 
-BEGIN_GAIA_GRAPHICS_VK1
+BEGIN_GAIA_VK1
 
 class RayTracingElement
 {
@@ -14,4 +14,4 @@ public:
 	RayTracingElement& operator=(RayTracingElement&&) = default;
 };
 
-END_GAIA_GRAPHICS_VK1
+END_GAIA_VK1

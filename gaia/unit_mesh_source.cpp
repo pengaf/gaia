@@ -42,10 +42,10 @@ struct CompareUnitMeshParamPtr
 		}
 		switch (lhs->type)
 		{
-		case UnitMeshSource::UnitMeshType::square:
-			return *lhs < *rhs;
+		//case UnitMeshSource::UnitMeshType::square:
+		//	return *lhs < *rhs;
 		case UnitMeshSource::UnitMeshType::circle:
-			return *static_cast<UnitMeshSource::CircleParam*>(lhs) < *static_cast<UnitMeshSource::CircleParam*>(rhs);
+			return *static_cast<const UnitMeshSource::CircleParam*>(lhs) < *static_cast<const UnitMeshSource::CircleParam*>(rhs);
 		}
 		return false;
 	}
@@ -66,13 +66,14 @@ UnitMeshSource::~UnitMeshSource()
 {
 }
 
-UnitMeshType UnitMeshSource::unitMeshType() const
+UnitMeshSource::UnitMeshType UnitMeshSource::unitMeshType() const
 {
-	return m_param ? m_param->type
+	return m_param ? m_param->type : UnitMeshType::none;
 }
 
 UnitMeshSource& UnitMeshSource::unitMeshType(UnitMeshType umt)
 {
+	return *this;
 }
 
 END_GAIA

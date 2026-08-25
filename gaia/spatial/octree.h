@@ -2,7 +2,7 @@
 
 #include "utility.h"
 
-BEGIN_GAIA_SPATIAL
+BEGIN_GAIA
 
 class OctreeNode
 {
@@ -14,4 +14,4 @@ class Octree
 
 };
 
-END_GAIA_SPATIAL
+END_GAIA

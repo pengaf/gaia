@@ -1,9 +1,9 @@
 #pragma once
 
-#include "render_able_3d.h"
-#include "graphics_element.h"
+#include "renderable_3d.h"
+#include <vector>
 
-BEGIN_GAIA_GRAPHICS
+BEGIN_GAIA
 
 class StaticMeshRenderable3D : public Renderable3D
 {
@@ -14,4 +14,4 @@ protected:
 	std::vector<RefPtr<Material>> m_material;
 };
 
-END_GAIA_GRAPHICS
+END_GAIA

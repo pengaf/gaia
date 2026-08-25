@@ -2,7 +2,7 @@
 
 #include "render_able_2d.h"
 
-BEGIN_GAIA_GRAPHICS
+BEGIN_GAIA
 
 class StaticMeshRenderable2D : public Renderable2D
 {
@@ -13,4 +13,4 @@ protected:
 	std::vector<RefPtr<Material>> m_material;
 };
 
-END_GAIA_GRAPHICS
+END_GAIA

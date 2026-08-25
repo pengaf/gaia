@@ -2,8 +2,8 @@
 #include "utility.h"
 #include "vk1/render_pass.h"
 
-BEGIN_GAIA_GRAPHICS
+BEGIN_GAIA
 
 using RenderPass = rt::RenderPass;
 
-END_GAIA_GRAPHICS
+END_GAIA

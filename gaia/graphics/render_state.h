@@ -1,7 +1,7 @@
 #pragma once
 #include "utility.h"
 
-BEGIN_GAIA_GRAPHICS
+BEGIN_GAIA
 
 //class GraphicsRenderState 
 //{
@@ -75,4 +75,4 @@ BEGIN_GAIA_GRAPHICS
 //};
 //
 
-END_GAIA_GRAPHICS
+END_GAIA

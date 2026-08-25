@@ -1,4 +1,7 @@
 #pragma once
+#include <cstdint>
+#include <cfloat>
+#include "pafcore/utility.h"
 
 #define BEGIN_GAIA namespace gaia {
 #define END_GAIA }
@@ -30,7 +33,4 @@
 #define GAIA_HIGH_PRECISION_POSITION_2D		0
 #define GAIA_HIGH_PRECISION_POSITION_3D		0
 
-#ifndef GAIA_PAF_PATH
-#define GAIA_PAF_PATH "D:/pengaf/idlcpp/paf/"
-#endif
-
+#define GAIA_ASSERT PAF_ASSERT

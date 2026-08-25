@@ -5,7 +5,9 @@
 #include <vector>
 #include <string>
 
-BEGIN_GAIA_GRAPHICS
+BEGIN_GAIA
+
+class Buffer;
 
 struct VertexAttribute
 {
@@ -54,4 +56,4 @@ public:
     RefPtr<Buffer> m_indexBuffer;
 };
 
-END_GAIA_GRAPHICS
+END_GAIA

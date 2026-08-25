@@ -1,53 +1,9 @@
 #include "texture.h"
+#include "detail/mapping.h"
+#include "render_system.h"
 
-BEGIN_GAIA_GRAPHICS_VK1
+BEGIN_GAIA_VK1
 
-VkImageUsageFlags MappingTextureUsage(TextureUsage textureUsage)
-{
-    VkImageUsageFlags flags = 0;
-
-    if ((textureUsage & TextureUsage::copy_src) != TextureUsage(0))
-    {
-        flags |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-    }
-
-    if ((textureUsage & TextureUsage::copy_dst) != TextureUsage(0))
-    {
-        flags |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-    }
-
-    if ((textureUsage & TextureUsage::shader_resource) != TextureUsage(0))
-    {
-        flags |= VK_IMAGE_USAGE_SAMPLED_BIT;
-    }
-
-    if ((textureUsage & TextureUsage::unordered_access) != TextureUsage(0))
-    {
-        flags |= VK_IMAGE_USAGE_STORAGE_BIT;
-    }
-
-    if ((textureUsage & TextureUsage::render_target) != TextureUsage(0))
-    {
-        flags |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-    }
-
-    if ((textureUsage & TextureUsage::depth_stencil) != TextureUsage(0))
-    {
-        flags |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-    }
-
-    if ((textureUsage & TextureUsage::input) != TextureUsage(0))
-    {
-        flags |= VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
-    }
-
-    if ((textureUsage & TextureUsage::transient) != TextureUsage(0))
-    {
-        flags |= VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT;
-    }
-
-    return flags;
-}
 
 VkImageType MappingImageType(TextureDimension dim)
 {
@@ -64,33 +20,36 @@ VkImageType MappingImageType(TextureDimension dim)
     }
 }
 
-VkFormat MappingTextureFormat(Format format)
-{
-}
-
-RefPtr<Texture> New(RenderSystem* renderSystem,
-    uint32_t width, uint32_t height, uint32_t depth,
-    uint32_t mipLevels, uint32_t arrayLayers,
-    TextureDimension dimension, TextureFormat format,
-    TextureUsage textureUsage, CpuAccess cpuAccess)
+RefPtr<Texture> Texture::New(
+    RenderSystem* renderSystem,
+    const TextureDesc& desc)
+    //uint32_t width, 
+    //uint32_t height, 
+    //uint32_t depth,
+    //uint32_t mipLevels, 
+    //uint32_t arrayLayers,
+    //TextureDimension dimension, 
+    //TextureFormat format,
+    //TextureUsage textureUsage, 
+    //CpuAccess cpuAccess)
 {
     VkImageCreateInfo imageCreateInfo{};
     imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-    imageCreateInfo.imageType = MappingImageType(dimension);
-    imageCreateInfo.format = MappingVkFormat(format);
-    imageCreateInfo.extent = { width, height, depth };
-    imageCreateInfo.mipLevels = mipLevels;
-    imageCreateInfo.arrayLayers = arrayLayers;
+    imageCreateInfo.imageType = MappingImageType(desc.dimension);
+    imageCreateInfo.format = MappingTextureFormat(desc.format);
+    imageCreateInfo.extent = { desc.width, desc.height, desc.depth };
+    imageCreateInfo.mipLevels = desc.mipLevels;
+    imageCreateInfo.arrayLayers = desc.arrayLayers;
     imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
     imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-    imageCreateInfo.usage = MappingImageUsage(textureUsage);
+    imageCreateInfo.usage = MappingTextureUsage(desc.textureUsage);
     imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
     VmaAllocationCreateInfo allocInfo{};
     allocInfo.flags = 0;
 
-    switch (cpuAccess)
+    switch (desc.cpuAccess)
     {
     case CpuAccess::none:
         allocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
@@ -108,7 +67,7 @@ RefPtr<Texture> New(RenderSystem* renderSystem,
     }
 
     // 大资源启用独立内存分配
-    VkDeviceSize totalBytes = static_cast<VkDeviceSize>(width) * height * depth * arrayLayers * mipLevels;
+    VkDeviceSize totalBytes = static_cast<VkDeviceSize>(desc.width) * desc.height * desc.depth * desc.arrayLayers * desc.mipLevels;
     const VkDeviceSize bigResourceThreshold = 1024ULL * 1024ULL * 32ULL;
     if (totalBytes > bigResourceThreshold)
     {
@@ -116,7 +75,7 @@ RefPtr<Texture> New(RenderSystem* renderSystem,
     }
 
     VkImage image = VK_NULL_HANDLE;
-    VmaAllocation allocation = VMA_NULL_HANDLE;
+    VmaAllocation allocation = VK_NULL_HANDLE;
     VmaAllocationInfo allocResultInfo{};
 
     VkResult ret = vmaCreateImage(renderSystem->allocator(),
@@ -132,34 +91,39 @@ RefPtr<Texture> New(RenderSystem* renderSystem,
     }
 
     // 构造默认ImageView（常规2D/数组视图，可封装到Texture构造内部创建）
-    RefPtr<Texture> tex = RefPtr<Texture>(new Texture(renderSystem,
-        image, allocation, allocResultInfo,
-        width, height, depth,
-        mipLevels, arrayLayers,
-        dimension, format));
+    RefPtr<Texture> tex = RefPtr<Texture>(new Texture(
+        renderSystem,
+        image, 
+        allocation, 
+        //allocResultInfo,
+        desc.width, 
+        desc.height, 
+        desc.depth,
+        desc.mipLevels, 
+        desc.arrayLayers,
+        desc.dimension, 
+        desc.format));
 
     return tex;
 }
 
-Texture::Texture(RenderSystem* renderSystem)
-    : m_renderSystem(renderSystem)
-    , m_image(VK_NULL_HANDLE)
-    , m_allocation(VMA_NULL_HANDLE)
-{
-}
 
-Texture::Texture(RenderSystem* renderSystem,
+Texture::Texture(
+    RenderSystem* renderSystem,
     VkImage image,
     VmaAllocation alloc,
-    VmaAllocationInfo allocInfo,
-    uint32_t width, uint32_t height, uint32_t depth,
-    uint32_t mips, uint32_t layers,
+    //VmaAllocationInfo allocInfo,
+    uint32_t width, 
+    uint32_t height, 
+    uint32_t depth,
+    uint32_t mips, 
+    uint32_t layers,
     TextureDimension dim,
     TextureFormat fmt)
     : m_renderSystem(renderSystem)
     , m_image(image)
     , m_allocation(alloc)
-    , m_allocInfo(allocInfo)
+    //, m_allocInfo(allocInfo)
     , m_width(width)
     , m_height(height)
     , m_depth(depth)
@@ -177,8 +141,8 @@ Texture::~Texture()
     {
         vmaDestroyImage(m_renderSystem->allocator(), m_image, m_allocation);
         m_image = VK_NULL_HANDLE;
-        m_allocation = VMA_NULL_HANDLE;
+        m_allocation = VK_NULL_HANDLE;
     }
 }
 
-END_GAIA_GRAPHICS_VK1
+END_GAIA_VK1

@@ -1,6 +1,7 @@
 #include "single_thread_render_scheduler.h"
+#include "../vertex_shader_element.h"
 
-BEGIN_GAIA_VK1_DETAIL
+BEGIN_GAIA_VK1
 
 SingleThreadRenderScheduler::SingleThreadRenderScheduler()
 {}
@@ -9,19 +10,20 @@ SingleThreadRenderScheduler::~SingleThreadRenderScheduler()
 {
 }
 
-void SingleThreadRenderScheduler::render(const RenderWindow** renderWindows, uint32_t count)
+void SingleThreadRenderScheduler::render(RenderWindow** renderWindows, uint32_t count)
 {
 	for (uint32_t i = 0; i < count; ++i)
 	{
 		RenderWindow* renderWindow = renderWindows[i];
-
 	}
+
 	VkCommandBuffer commandBuffer;
 	VkPipeline currentPipeline = VK_NULL_HANDLE;
 	VertexBufferSet currentVertexBufferSet;
 	IndexBuffer currentIndexBuffer;
 
-	vkCmdBeginRendering(commandBuffer);
+	VkRenderingInfo renderingInfo;
+	vkCmdBeginRendering(commandBuffer, &renderingInfo);
 
 	VertexShaderElement* graphicsElement;
 	VkPipeline pipeline = graphicsElement->m_pipeline;
@@ -50,4 +52,4 @@ void SingleThreadRenderScheduler::render(const RenderWindow** renderWindows, uin
 
 }
 
-END_GAIA_VK1_DETAIL
+END_GAIA_VK1

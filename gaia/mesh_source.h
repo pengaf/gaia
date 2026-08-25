@@ -1,8 +1,8 @@
 #pragma once
 #include "utility.h"
 #include "graphics/mesh.h"
-#include GAIA_PAF_PATH"pafcore/object.h"
-#include GAIA_PAF_PATH"pafcore/memory.h"
+#include "pafcore/object.h"
+#include "pafcore/memory.h"
 
 BEGIN_GAIA
 

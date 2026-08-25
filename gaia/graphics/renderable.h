@@ -1,9 +1,9 @@
 #pragma once
 
-#include "utility.h"
-#include "../math/axis_aligned_box.h"
+#include "hal/vertex_shader_element.h"
+#include <vector>
 
-BEGIN_GAIA_GRAPHICS
+BEGIN_GAIA
 
 class RenderSystem;
 class Mesh;
@@ -18,4 +18,4 @@ protected:
 	std::vector<VertexShaderElement> m_graphicsElements;
 };
 
-END_GAIA_GRAPHICS
+END_GAIA

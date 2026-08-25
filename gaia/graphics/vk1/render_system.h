@@ -2,48 +2,13 @@
 #include "utility.h"
 #include "detail/vulkan.h"
 #include "detail/vk_mem_alloc.h"
-#include "../common.h"
+#include "hal_fwd.h"
 
 #include <vector>
 #include <string>
 #include <thread>
 
-BEGIN_GAIA_GRAPHICS_VK1
-
-class Buffer;
-class Texture;
-class ShaderResourceView;
-class UnorderedAccessView;
-class RenderTargetView;
-class DepthStencilView;
-class Sampler;
-
-//class VertexShader;
-//class FragmentShader;
-//class GeometryShader;
-//class HullShader;
-//class DomainShader;
-//class ComputeShader;
-//class MeshShader;
-//class AmplificationShader;
-//class RayGenerationShader;
-//class IntersectionShader;
-//class AnyHitShader;
-//class ClosestHitShader;
-//class MissShader;
-//class CallableShader;
-
-class GraphicsState;
-class ComputeState;
-class RayTracingState;
-class MeshShaderState;
-
-class GraphicsPipelineState;
-class ComputePipelineState;
-class RayTracingPipelineState;
-class MeshShaderPipelineState;
-
-class RenderWindow;
+BEGIN_GAIA_VK1
 
 
 typedef uint32_t(*SelectPhysicalDeviceFunc)(const std::vector<std::string>& deviceNames);
@@ -79,8 +44,8 @@ public:
 	bool initialize(const RenderSystemConfig& config);
 	Buffer* createBuffer(const BufferDesc& desc);
 	void writeBuffer(Buffer* buffer, uint64_t offset, uint64_t size, const void* data);
+	VertexShader* createVertexShader(const char* code, size_t codeSize, const char* entryPoint);
 
-	//VertexShader* createVertexShader(const char* code, size_t codeSize, const char* entryPoint);
 	//FragmentShader* createFragmentShader(const char* code, size_t codeSize, const char* entryPoint);
 	//GeometryShader* createGeometryShader(const char* code, size_t codeSize, const char* entryPoint);
 	//HullShader* createHullShader(const char* code, size_t codeSize, const char* entryPoint);
@@ -108,6 +73,7 @@ public:
 
 	RenderWindow* createRenderWindow(void* platformHandle);
 public:
+	VmaAllocator allocator() const;
 	void render(VertexShaderElement* graphicsElements);
 private:
 	struct RecordThread
@@ -138,4 +104,4 @@ private:
 	TransferThread m_transferThread;
 };
 
-END_GAIA_GRAPHICS_VK1
+END_GAIA_VK1

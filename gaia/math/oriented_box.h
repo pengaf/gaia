@@ -2,7 +2,7 @@
 
 #include "vector.h"
 
-BEGIN_GAIA_MATH
+BEGIN_GAIA
 
 template<typename Number_t>
 class OrientedBox2
@@ -39,4 +39,4 @@ public:
 using OrientedBox2f = OrientedBox2<float>;
 using OrientedBox3f = OrientedBox3<float>;
 
-END_GAIA_MATH
+END_GAIA

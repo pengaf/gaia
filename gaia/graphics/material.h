@@ -2,11 +2,11 @@
 
 #include "utility.h"
 
-BEGIN_GAIA_GRAPHICS
+BEGIN_GAIA
 
 class Material
 {
 
 };
 
-END_GAIA_GRAPHICS
+END_GAIA

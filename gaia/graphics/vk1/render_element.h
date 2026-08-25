@@ -1,13 +1,8 @@
 #pragma once
 #include "utility.h"
+#include "../hal/render_element_common.h"
 
-BEGIN_GAIA_GRAPHICS_VK1
-
-enum class RenderElementType : uint8_t
-{
-	vertex_shader_element,
-	mesh_shader_element,
-};
+BEGIN_GAIA_VK1
 
 class RenderElement
 {
@@ -27,4 +22,4 @@ protected:
 	uint32_t m_subOffset{ 0 };
 };
 
-END_GAIA_GRAPHICS_VK1
+END_GAIA_VK1

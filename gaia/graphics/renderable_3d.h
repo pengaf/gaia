@@ -3,9 +3,7 @@
 #include "renderable.h"
 #include "../math/matrix.h"
 
-BEGIN_GAIA_GRAPHICS
-
-using math::AffineTransform3D;
+BEGIN_GAIA
 
 class Renderable3D : public Renderable
 {
@@ -15,4 +13,4 @@ protected:
 	AffineTransform3D m_worldTransform;
 };
 
-END_GAIA_GRAPHICS
+END_GAIA

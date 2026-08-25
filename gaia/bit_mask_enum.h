@@ -1,3 +1,5 @@
+#pragma once
+
 #include "utility.h"
 #include <type_traits>
 
@@ -50,13 +52,13 @@ constexpr std::enable_if_t<is_bitmask_enum<Enum_t>::value, Enum_t&> operator^=(E
     return a = a ^ b; 
 }
 
-//template<typename Enum_t>
-//constexpr std::enable_if_t<is_bitmask_enum<Enum_t>::value, bool>
-//HasFlag(Enum_t src, Enum_t flag) noexcept
-//{
-//    return (static_cast<std::underlying_type_t<Enum_t>>(src) & static_cast<std::underlying_type_t<Enum_t>>(flag)) != 0;
-//}
-//
+template<typename Enum_t>
+constexpr std::enable_if_t<is_bitmask_enum<Enum_t>::value, bool>
+EnumHasFlag(Enum_t src, Enum_t flag) noexcept
+{
+    return (static_cast<std::underlying_type_t<Enum_t>>(src) & static_cast<std::underlying_type_t<Enum_t>>(flag)) != 0;
+}
+
 
 //template<typename Enum_t>
 //constexpr std::enable_if_t<is_bitmask_enum<Enum_t>::value, Enum_t>

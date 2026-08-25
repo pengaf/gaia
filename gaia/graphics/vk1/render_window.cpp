@@ -1,6 +1,6 @@
 #include "render_window.h"
 
-BEGIN_GAIA_GRAPHICS_VK1
+BEGIN_GAIA_VK1
 
 RenderWindow::RenderWindow()
 {
@@ -15,4 +15,4 @@ RenderTargetView* RenderWindow::nextRenderTargetView()
 	return nullptr;
 }
 
-END_GAIA_GRAPHICS_VK1
+END_GAIA_VK1

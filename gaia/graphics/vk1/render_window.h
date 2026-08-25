@@ -3,7 +3,7 @@
 #include "detail/vulkan.h"
 #include "../render_output.h"
 
-BEGIN_GAIA_GRAPHICS_VK1
+BEGIN_GAIA_VK1
 
 class RenderWindow : public RenderOutput
 {
@@ -26,4 +26,4 @@ private:
 	VkCommandBuffer m_commandBuffers[gaia_max_swapchain_image_count];
 };
 
-END_GAIA_GRAPHICS_VK1
+END_GAIA_VK1

@@ -1,7 +1,12 @@
+#pragma once
+
+#include "vulkan.h"
 #include "../utility.h"
 #include "../../common.h"
 
-BEGIN_GAIA_GRAPHICS_VK1
+BEGIN_GAIA_VK1
 
+VkFormat MappingTextureFormat(TextureFormat format);
+VkImageUsageFlags MappingTextureUsage(TextureUsage usage);
 
-END_GAIA_GRAPHICS_VK1
+END_GAIA_VK1

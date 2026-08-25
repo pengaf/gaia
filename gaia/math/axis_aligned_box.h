@@ -2,7 +2,7 @@
 
 #include "vector.h"
 
-BEGIN_GAIA_MATH
+BEGIN_GAIA
 
 template<typename Vector_t>
 class AxisAlignedBox
@@ -18,4 +18,4 @@ public:
 using AxisAlignedBox2f = AxisAlignedBox<Vector2f>;
 using AxisAlignedBox3f = AxisAlignedBox<Vector3f>;
 
-END_GAIA_MATH
+END_GAIA

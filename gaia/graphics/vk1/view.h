@@ -4,7 +4,7 @@
 #include "detail/vulkan.h"
 #include "detail/vk_mem_alloc.h"
 
-BEGIN_GAIA_GRAPHICS_VK1
+BEGIN_GAIA_VK1
 
 enum class ViewType
 {
@@ -74,4 +74,4 @@ public:
 	RefPtr<RenderTargetView> New(RenderSystem* renderSystem, Texture* texture, const RenderTargetViewDesc& viewDesc);
 };
 
-END_GAIA_GRAPHICS_VK1
+END_GAIA_VK1
