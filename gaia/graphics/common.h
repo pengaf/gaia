@@ -123,6 +123,7 @@ enum class TextureFormat
     astc_12x12_unorm,
     astc_12x12_unorm_srgb,
     count,
+    unknown = count,
 };
 
 

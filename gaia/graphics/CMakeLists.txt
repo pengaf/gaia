@@ -60,4 +60,6 @@ gaia_register_source_group("graphics" FILES
 
 add_subdirectory(hal)
 add_subdirectory(renderer)
+add_subdirectory(vk1)
+add_subdirectory(rg)
 gaia_register_source_group("graphics" FILES ${CMAKE_CURRENT_SOURCE_DIR}/CMakeLists.txt)

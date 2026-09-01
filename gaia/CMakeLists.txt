@@ -92,7 +92,6 @@ if(GAIA_BUILD_VULKAN)
 
     list(APPEND CMAKE_PREFIX_PATH "${VULKAN_SDK}")
     find_package(Vulkan REQUIRED)
-    add_subdirectory(graphics/vk1)
     target_include_directories(gaia PUBLIC "${VULKAN_SDK}/Include")
     target_link_directories(gaia PUBLIC "${VULKAN_SDK}/Lib")
     target_link_libraries(gaia PUBLIC Vulkan::Vulkan)
