@@ -1,20 +1,17 @@
 #pragma once
+
 #include "utility.h"
-#include "../common.h"
+#include "common.h"
 
 BEGIN_GAIA_RG
 
-struct TextureHandle
+
+struct RenderResource
 {
-	uint32_t index;
+    const char* m_name;
 };
 
-struct BufferHandle
-{
-	uint32_t index;
-};
-
-struct TextureDesc
+struct RenderTexture : public RenderResource
 {
     uint32_t width = 1;
     uint32_t height = 1;
@@ -28,16 +25,14 @@ struct TextureDesc
 
     uint8_t tiling = 0;
     uint8_t memoryType = 0;
-
-    const char* name;
 };
 
-struct BufferDesc
+struct RenderBuffer : public RenderResource
 {
 	uint64_t size = 0;
 	uint32_t usage = 0;
 	uint8_t memoryType = 0;
-	const char* name;
 };
+
 
 END_GAIA_RG

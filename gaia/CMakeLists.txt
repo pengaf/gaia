@@ -8,27 +8,11 @@ endif()
 add_library(gaia ${gaia_library_type})
 add_library(gaia::gaia ALIAS gaia)
 
-target_sources(gaia
-    PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/CMakeLists.txt
-        unit_mesh_source.cpp
-    PUBLIC
-        FILE_SET HEADERS
-        BASE_DIRS ${GAIA_SOURCE_DIR}
-        FILES
-            bit_mask_enum.h
-            file_mesh_source.h
-            mesh_source.h
-            ref_ptr.h
-            scene.h
-            scene_component.h
-            scene_node.h
-            static_mesh_component.h
-            unit_mesh_source.h
-            utility.h
+set(source_files
+    ${CMAKE_CURRENT_SOURCE_DIR}/unit_mesh_source.cpp
 )
 
-gaia_register_source_group("" FILES
+set(header_files
     ${CMAKE_CURRENT_SOURCE_DIR}/bit_mask_enum.h
     ${CMAKE_CURRENT_SOURCE_DIR}/file_mesh_source.h
     ${CMAKE_CURRENT_SOURCE_DIR}/mesh_source.h
@@ -37,10 +21,27 @@ gaia_register_source_group("" FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/scene_component.h
     ${CMAKE_CURRENT_SOURCE_DIR}/scene_node.h
     ${CMAKE_CURRENT_SOURCE_DIR}/static_mesh_component.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/unit_mesh_source.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/unit_mesh_source.h
     ${CMAKE_CURRENT_SOURCE_DIR}/utility.h
 )
+
+set(interface_files)
+
+target_sources(gaia
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/CMakeLists.txt
+        ${source_files}
+    PUBLIC
+        FILE_SET HEADERS
+        BASE_DIRS ${GAIA_SOURCE_DIR}
+        FILES
+            ${header_files}
+)
+
+gaia_register_source_group("Source Files" FILES ${source_files})
+gaia_register_source_group("Header Files" FILES ${header_files})
+gaia_register_source_group("Interface Files" FILES ${interface_files})
+gaia_register_source_group("" FILES ${CMAKE_CURRENT_SOURCE_DIR}/CMakeLists.txt)
 
 target_compile_features(gaia PUBLIC cxx_std_20)
 
@@ -75,11 +76,12 @@ add_subdirectory(math)
 add_subdirectory(scene)
 add_subdirectory(spatial)
 
-get_property(gaia_idl_generated_files GLOBAL PROPERTY GAIA_IDL_ALL_GENERATED_FILES)
-if(gaia_idl_generated_files)
-    target_sources(gaia PRIVATE ${gaia_idl_generated_files})
-    set_source_files_properties(${gaia_idl_generated_files} PROPERTIES HEADER_FILE_ONLY TRUE)
-endif()
+get_property(gaia_source_group_names GLOBAL PROPERTY GAIA_SOURCE_GROUP_NAMES)
+foreach(source_group_name IN LISTS gaia_source_group_names)
+    get_property(source_group_files GLOBAL PROPERTY "GAIA_SOURCE_GROUP_FILES_${source_group_name}")
+    source_group("${source_group_name}" FILES ${source_group_files})
+endforeach()
+
 gaia_finalize_idlcpp_sources(gaia)
 
 if(GAIA_BUILD_VULKAN)
@@ -99,47 +101,6 @@ if(GAIA_BUILD_VULKAN)
 else()
     target_compile_definitions(gaia PUBLIC GAIA_HAS_VULKAN=0)
 endif()
-
-get_property(gaia_source_group_ids GLOBAL PROPERTY GAIA_SOURCE_GROUP_IDS)
-foreach(source_group_id IN LISTS gaia_source_group_ids)
-    get_property(source_group_name GLOBAL PROPERTY "GAIA_SOURCE_GROUP_NAME_${source_group_id}")
-    get_property(source_group_files GLOBAL PROPERTY "GAIA_SOURCE_GROUP_FILES_${source_group_id}")
-    source_group("${source_group_name}" FILES ${source_group_files})
-endforeach()
-
-get_property(gaia_idl_all_generated_files GLOBAL PROPERTY GAIA_IDL_ALL_GENERATED_FILES)
-get_property(gaia_idl_group_ids GLOBAL PROPERTY GAIA_IDL_GROUP_IDS)
-foreach(idl_group_id IN LISTS gaia_idl_group_ids)
-    get_property(idl_generated_files GLOBAL PROPERTY "GAIA_IDL_FILES_${idl_group_id}")
-    if(idl_generated_files)
-        list(GET idl_generated_files 0 idl_generated_file)
-        get_filename_component(idl_generated_directory "${idl_generated_file}" DIRECTORY)
-        file(RELATIVE_PATH idl_generated_prefix
-            "${GAIA_SOURCE_DIR}"
-            "${idl_generated_directory}"
-        )
-        if(idl_generated_prefix STREQUAL ".")
-            set(idl_generated_group "IDL Generated")
-        else()
-            set(idl_generated_group "${idl_generated_prefix}\\IDL Generated")
-        endif()
-        source_group("${idl_generated_group}" FILES ${idl_generated_files})
-    endif()
-endforeach()
-
-foreach(idl_generated_file IN LISTS gaia_idl_all_generated_files)
-    get_filename_component(idl_generated_directory "${idl_generated_file}" DIRECTORY)
-    file(RELATIVE_PATH idl_generated_prefix
-        "${GAIA_SOURCE_DIR}"
-        "${idl_generated_directory}"
-    )
-    if(idl_generated_prefix STREQUAL ".")
-        set(idl_generated_group "IDL Generated")
-    else()
-        set(idl_generated_group "${idl_generated_prefix}\\IDL Generated")
-    endif()
-    source_group("${idl_generated_group}" FILES "${idl_generated_file}")
-endforeach()
 
 include(GNUInstallDirs)
 
