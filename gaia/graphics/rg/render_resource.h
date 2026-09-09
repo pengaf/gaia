@@ -5,7 +5,6 @@
 
 BEGIN_GAIA_RG
 
-
 struct RenderResource
 {
     const char* m_name;

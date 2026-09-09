@@ -6,6 +6,8 @@
 
 BEGIN_GAIA
 
+const uint32_t gaia_max_bind_group_count = 4; //
+const uint32_t gaia_max_color_attment_count = 8; //
 const uint32_t gaia_max_vertex_buffer_bind_count = 8; //webgpu 8, d3d12 32, vulkan 16, metal 31
 const uint32_t gaia_max_swapchain_image_count = 4;
 

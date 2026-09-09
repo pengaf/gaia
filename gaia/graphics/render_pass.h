@@ -4,6 +4,6 @@
 
 BEGIN_GAIA
 
-using RenderPass = rt::RenderPass;
+using RenderPass = vk1::RenderPass;
 
 END_GAIA

@@ -1,13 +1,14 @@
 set(source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/buffer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/render_pass.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/render_system.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/render_window.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/texture.cpp
 )
 set(header_files
     ${CMAKE_CURRENT_SOURCE_DIR}/buffer.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/common.h
     ${CMAKE_CURRENT_SOURCE_DIR}/compute_element.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/compute_pass.h
     ${CMAKE_CURRENT_SOURCE_DIR}/graphics_pipeline.h
     ${CMAKE_CURRENT_SOURCE_DIR}/hal_fwd.h
     ${CMAKE_CURRENT_SOURCE_DIR}/mesh_shader_element.h
