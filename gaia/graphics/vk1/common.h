@@ -8,37 +8,37 @@ BEGIN_GAIA_VK1
 
 struct DrawCommand
 {
-	uint32_t vertexCount;
-	uint32_t instanceCount;
-	uint32_t firstVertex;
-	uint32_t firstInstance;
+	uint32_t m_vertexCount;
+	uint32_t m_instanceCount;
+	uint32_t m_firstVertex;
+	uint32_t m_firstInstance;
 	void execute(VkCommandBuffer commandBuffer)
 	{
-		vkCmdDraw(commandBuffer, vertexCount, instanceCount, firstVertex, firstInstance);
+		vkCmdDraw(commandBuffer, m_vertexCount, m_instanceCount, m_firstVertex, m_firstInstance);
 	}
 };
 
 struct DrawIndexedCommand
 {
-	uint32_t indexCount;
-	uint32_t instanceCount;
-	uint32_t firstIndex;
-	int32_t vertexOffset;
-	uint32_t firstInstance;
+	uint32_t m_indexCount;
+	uint32_t m_instanceCount;
+	uint32_t m_firstIndex;
+	int32_t m_vertexOffset;
+	uint32_t m_firstInstance;
 	void execute(VkCommandBuffer commandBuffer)
 	{
-		vkCmdDrawIndexed(commandBuffer, indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
+		vkCmdDrawIndexed(commandBuffer, m_indexCount, m_instanceCount, m_firstIndex, m_vertexOffset, m_firstInstance);
 	}
 };
 
 struct DispatchCommand
 {
-	uint32_t groupCountX;
-	uint32_t groupCountY;
-	uint32_t groupCountZ;
+	uint32_t m_groupCountX;
+	uint32_t m_groupCountY;
+	uint32_t m_groupCountZ;
 	void execute(VkCommandBuffer commandBuffer)
 	{
-		vkCmdDispatch(commandBuffer, groupCountX, groupCountY, groupCountZ);
+		vkCmdDispatch(commandBuffer, m_groupCountX, m_groupCountY, m_groupCountZ);
 	}
 };
 
@@ -46,64 +46,84 @@ struct BarrierCommandSet
 {
 	struct BarrierCommand
 	{
-		VkPipelineStageFlags srcStageMask;
-		VkPipelineStageFlags dstStageMask;
-		VkDependencyFlags dependencyFlags;
-		uint32_t startBufferMemoryBarrier;
-		uint32_t bufferMemoryBarrierCount;
-		uint32_t startImageMemoryBarrier;
-		uint32_t imageMemoryBarrierCount;
+		VkPipelineStageFlags m_srcStageMask;
+		VkPipelineStageFlags m_dstStageMask;
+		VkDependencyFlags m_dependencyFlags;
+		uint32_t m_startBufferMemoryBarrier;
+		uint32_t m_bufferMemoryBarrierCount;
+		uint32_t m_startImageMemoryBarrier;
+		uint32_t m_imageMemoryBarrierCount;
 	};
-	std::vector<VkBufferMemoryBarrier> bufferBarriers;
-	std::vector<VkImageMemoryBarrier> imageBarriers;
-	std::vector<BarrierCommand> barrierCommands;
+	std::vector<VkBufferMemoryBarrier> m_bufferBarriers;
+	std::vector<VkImageMemoryBarrier> m_imageBarriers;
+	std::vector<BarrierCommand> m_barrierCommands;
 	void execute(VkCommandBuffer commandBuffer)
 	{
-		for (auto& pbc : barrierCommands)
+		for (auto& pbc : m_barrierCommands)
 		{
 			GAIA_ASSERT(0 == pbc.bufferMemoryBarrierCount || pbc.bufferMemoryBarrierCount + pbc.startBufferMemoryBarrier <= bufferBarriers.size());
 			GAIA_ASSERT(0 == pbc.imageMemoryBarrierCount || pbc.imageMemoryBarrierCount + pbc.startImageMemoryBarrier <= imageBarriers.size());
 			vkCmdPipelineBarrier(
 				commandBuffer,
-				pbc.srcStageMask,
-				pbc.dstStageMask,
-				pbc.dependencyFlags,
+				pbc.m_srcStageMask,
+				pbc.m_dstStageMask,
+				pbc.m_dependencyFlags,
 				0,
 				nullptr,
-				pbc.bufferMemoryBarrierCount,
-				pbc.bufferMemoryBarrierCount ? bufferBarriers.data() + pbc.startBufferMemoryBarrier : nullptr,
-				pbc.imageMemoryBarrierCount,
-				pbc.imageMemoryBarrierCount ? imageBarriers.data() + pbc.startImageMemoryBarrier : nullptr);
+				pbc.m_bufferMemoryBarrierCount,
+				pbc.m_bufferMemoryBarrierCount ? m_bufferBarriers.data() + pbc.m_startBufferMemoryBarrier : nullptr,
+				pbc.m_imageMemoryBarrierCount,
+				pbc.m_imageMemoryBarrierCount ? m_imageBarriers.data() + pbc.m_startImageMemoryBarrier : nullptr);
 		}
 	}
 };
 
-
-struct SimplePipelineCommand
+struct BindPipelineCommand
 {
-	VkPipeline pipeline;
-	VkPipelineLayout pipelineLayout;
-	VkDescriptorSet descriptorSets[gaia_max_bind_group_count];
-	uint32_t descriptorSetCount;
-	VkPipelineBindPoint bindPoint;
+	VkPipeline m_pipeline;
+	VkPipelineBindPoint m_bindPoint;
 
 	void execute(VkCommandBuffer commandBuffer)
 	{
-		vkCmdBindPipeline(commandBuffer, bindPoint, pipeline);
-		if (descriptorSetCount)
+		vkCmdBindPipeline(commandBuffer, m_bindPoint, m_pipeline);
+	}
+};
+
+struct BindDescriptorSetsCommand
+{
+	VkPipelineLayout m_pipelineLayout;
+	VkDescriptorSet m_descriptorSets[gaia_max_bind_group_count];
+	uint32_t m_descriptorSetCount;
+	VkPipelineBindPoint m_bindPoint;
+	void execute(VkCommandBuffer commandBuffer)
+	{
+		if (m_descriptorSetCount)
 		{
 			vkCmdBindDescriptorSets(
 				commandBuffer,
-				bindPoint,
-				pipelineLayout,
+				m_bindPoint,
+				m_pipelineLayout,
 				0,
-				descriptorSetCount,
-				descriptorSets,
+				m_descriptorSetCount,
+				m_descriptorSets,
 				0,
 				nullptr);
 		}
 	}
 };
+
+struct BeginRenderingCommand
+{
+	VkRenderingInfo m_renderingInfo;
+	VkRenderingAttachmentInfo m_colorAttachmentInfos[gaia_max_color_attment_count];
+	VkRenderingAttachmentInfo m_depthAttachment;
+	VkRenderingAttachmentInfo m_stencilAttachment;
+	void execute(VkCommandBuffer commandBuffer)
+	{
+		vkCmdBeginRendering(commandBuffer, &m_renderingInfo);
+	}
+};
+
 
 
 END_GAIA_VK1

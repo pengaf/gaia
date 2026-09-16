@@ -1,5 +1,7 @@
 set(source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/pass.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/render_graph.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/render_graph_compiler.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/static_mesh_renderable_3d.cpp
 )
 
@@ -12,6 +14,8 @@ set(header_files
     ${CMAKE_CURRENT_SOURCE_DIR}/mesh.h
     ${CMAKE_CURRENT_SOURCE_DIR}/parallel_pass.h
     ${CMAKE_CURRENT_SOURCE_DIR}/pass.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/render_graph.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/render_graph_compiler.h
     ${CMAKE_CURRENT_SOURCE_DIR}/render_output.h
     ${CMAKE_CURRENT_SOURCE_DIR}/render_pass.h
     ${CMAKE_CURRENT_SOURCE_DIR}/render_state.h
@@ -47,6 +51,5 @@ gaia_register_source_group("graphics/Interface Files" FILES ${interface_files})
 gaia_register_source_group("graphics" FILES ${CMAKE_CURRENT_SOURCE_DIR}/CMakeLists.txt)
 
 add_subdirectory(hal)
-add_subdirectory(renderer)
 add_subdirectory(vk1)
 add_subdirectory(rg)

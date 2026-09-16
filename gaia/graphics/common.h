@@ -538,5 +538,13 @@ struct DrawCall
     };
 };
 
+enum class RenderPassKind
+{
+    scene_pass,
+    image_pass,
+    compute_pass,
+    ray_tracing_pass,
+};
+
 END_GAIA
 

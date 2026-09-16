@@ -1,5 +1,6 @@
 set(source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/buffer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/render_graph_compiler.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/render_pass.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/render_system.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/render_window.cpp
@@ -14,6 +15,7 @@ set(header_files
     ${CMAKE_CURRENT_SOURCE_DIR}/mesh_shader_element.h
     ${CMAKE_CURRENT_SOURCE_DIR}/ray_tracing_element.h
     ${CMAKE_CURRENT_SOURCE_DIR}/render_element.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/render_graph_compiler.h
     ${CMAKE_CURRENT_SOURCE_DIR}/render_pass.h
     ${CMAKE_CURRENT_SOURCE_DIR}/render_system.h
     ${CMAKE_CURRENT_SOURCE_DIR}/render_window.h
