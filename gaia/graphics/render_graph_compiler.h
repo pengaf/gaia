@@ -2,8 +2,7 @@
 
 #include "utility.h"
 #include "render_graph.h"
-#include <unordered_map>
-#include <unordered_set>
+#include <vector>
 
 BEGIN_GAIA
 
@@ -11,17 +10,22 @@ class RenderGraph;
 
 class RenderGraphCompiler
 {
+public:
 	struct ErrorInfo
 	{
-		RenderGraphErrorCode errorCode = RenderGraphErrorCode::ok;
-		uint32_t resource = uint32_t(-1);
-		RenderPass* renderPass = nullptr;
+		RenderGraphErrorCode errorCode;
+		uint32_t resource = UINT32_MAX;
+		uint32_t pass = UINT32_MAX;
 	};
 public:
-	ErrorInfo compile(RenderGraph* renderGraph);
+	std::vector<ErrorInfo> compile(RenderGraph* renderGraph);
 protected:
-	std::unordered_map<uint32_t, RenderPass*> m_resoureWritePass;
-	std::unordered_map<uint32_t, std::unordered_set<RenderPass*>> m_resoureReadPasses;
-};
+	//std::unordered_map<uint32_t, uint32_t> m_resourceWritePass;
+	//std::unordered_map<uint32_t, std::unordered_set<uint32_t>> m_resourceReadPasses;
+	std::vector<uint32_t> m_executionOrder;
+	//std::vector<ResourceLifecycle> m_lifecycles;
+	//std::vector<AliasingGroup> m_aliasingPlan;
+	//std::vector<BarrierPlan> m_barrierPlan;  // 抽象状态};
+}
 
 END_GAIA

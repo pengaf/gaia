@@ -13,16 +13,19 @@ enum class ViewType
     buffer_range,
 };
 
+class Buffer;
+class Texture;
+
 struct BufferRangeView
 {
-	RefPtr<Buffer> m_buffer;
+	Buffer* m_buffer;
     VkDeviceSize m_offset{ 0 };
     VkDeviceSize m_range{ VK_WHOLE_SIZE };
 };
 
 struct ImageView
 {
-	RefPtr<Texture> m_texture;
+	Texture* m_texture;
 	VkImageViewType m_viewType{ VK_IMAGE_VIEW_TYPE_2D };
 	VkFormat m_format{ VK_FORMAT_UNDEFINED };
 	VkImageSubresourceRange m_subresourceRange{};
@@ -30,7 +33,7 @@ struct ImageView
 
 struct BufferView
 {
-	RefPtr<Buffer> m_buffer;
+	Buffer* m_buffer;
 	VkFormat m_format{ VK_FORMAT_UNDEFINED };
 	VkDeviceSize m_offset{ 0 };
 	VkDeviceSize m_range{ VK_WHOLE_SIZE };
@@ -50,17 +53,19 @@ class SrvUav
 class RtvDsv
 {
 protected:
-    RefPtr<Texture> m_texture;
+    Texture* m_texture;
     VkImageView m_imageView;
 };
 
-class ShaderResourceView ： public SrvUav
+class ShaderResourceView : public SrvUav
 {
 };
 
-class UnorderedAccessView ： public SrvUav
+class UnorderedAccessView : public SrvUav
 {
 };
+
+class RenderSystem;
 
 class RenderTargetView : public RtvDsv
 {

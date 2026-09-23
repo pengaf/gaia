@@ -4,7 +4,7 @@
 
 BEGIN_GAIA_VK1
 
-class RenderGraphCompiler : RenderGraphCompiler
+class RenderGraphCompiler : gaia::RenderGraphCompiler
 {
 };
 
