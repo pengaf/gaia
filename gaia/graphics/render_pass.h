@@ -10,7 +10,6 @@ class RayTracingPipelineState;
 
 class RenderPass
 {
-    friend class RenderGraphCompiler;
 public:
     RenderPassKind kind() const
     {
@@ -27,9 +26,9 @@ class ScenePass : public RenderPass
 public:
     void addRTV(uint32_t rtv);
     void setDSV(uint32_t dsv);
-protected:
-    std::vector<uint32_t> m_rtvs;
-    uint32_t m_dsv;
+public:
+    AITL_ARG_RO(std::vector<uint32_t>, rtvs);
+    AITL_ARG_RO(uint32_t, dsv);
 };
 
 class ImagePass : public RenderPass
@@ -39,9 +38,10 @@ public:
     void addSRV(uint32_t srv);
     void addRTV(uint32_t rtv);
     void setPipeline(GraphicsPipelineState* pipeline);
+public:
+    AITL_ARG_RO(std::vector<uint32_t>, srvs);
+    AITL_ARG_RO(std::vector<uint32_t>, rtvs);
 protected:
-    std::vector<uint32_t> m_srvs;
-    std::vector<uint32_t> m_rtvs;
     GraphicsPipelineState* m_pipeline;
 };
 
@@ -52,9 +52,10 @@ public:
     void addSRV(uint32_t srv);
     void addUAV(uint32_t uav);
     void setPipeline(ComputePipelineState* pipeline);
+public:
+    AITL_ARG_RO(std::vector<uint32_t>, srvs);
+    AITL_ARG_RO(std::vector<uint32_t>, uavs);
 protected:
-    std::vector<uint32_t> m_srvs;
-    std::vector<uint32_t> m_uavs;
     ComputePipelineState* m_pipeline;
 };
 
@@ -65,9 +66,10 @@ public:
     void addSRV(uint32_t srv);
     void addUAV(uint32_t uav);
     void setPipeline(RayTracingPipelineState* pipeline);
+public:
+    AITL_ARG_RO(std::vector<uint32_t>, srvs);
+    AITL_ARG_RO(std::vector<uint32_t>, uavs);
 protected:
-    std::vector<uint32_t> m_srvs;
-    std::vector<uint32_t> m_uavs;
     RayTracingPipelineState* m_pipeline;
 };
 
