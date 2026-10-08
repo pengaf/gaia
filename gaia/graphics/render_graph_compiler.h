@@ -27,7 +27,6 @@ public:
 		uint32_t addBuffer(const char* name, const BufferDesc& desc)
 		{
 		}
-		void remove
 	};
 public:
 	std::vector<ErrorInfo> compile(RenderGraph* renderGraph);

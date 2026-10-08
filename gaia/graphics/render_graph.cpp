@@ -5,47 +5,61 @@ BEGIN_GAIA
 
 
 template<typename T>
-T* RenderGraph::addPass(const char* name)
+T* RenderGraph::addPass(std::string_view name)
 {
 	static_assert(std::is_base_of_v<RenderPass, T>, "T must derive from RenderPass");
 	T* pass = new T();
-	pass->m_name = m_passNamePool.getElement(name);
+	pass->m_name = name;
 	m_renderPasses.push_back(pass);
 	return pass;
 }
 
-uint32_t RenderGraph::addTexture(const char* name, const TextureDesc& desc)
+uint32_t RenderGraph::addTexture(std::string_view name, const TextureDesc& desc)
 {
 	uint32_t handle = m_resources.size();
-	TextureInfo* texture = new TextureInfo(m_resourceNamePool.getElement(name), desc);
+	TextureInfo* texture = new TextureInfo(name, desc);
 	m_resources.push_back(texture);
 	return handle;
 }
 
-uint32_t RenderGraph::addBuffer(const char* name, const BufferDesc& desc)
+uint32_t RenderGraph::addBuffer(std::string_view name, const BufferDesc& desc)
 {
 	uint32_t handle = m_resources.size();
-	BufferInfo* buffer = new BufferInfo(m_resourceNamePool.getElement(name), desc);
+	BufferInfo* buffer = new BufferInfo(name, desc);
 	m_resources.push_back(buffer);
 	return handle;
 }
 
-ScenePass* RenderGraph::addScenePass(const char* name)
+uint32_t RenderGraph::addExternalSrv(std::string_view name, ShaderResourceView* srv, ResourceState oldState)
+{
+	uint32_t handle = m_resources.size();
+	ExternalSrvInfo* externalSrv = new ExternalSrvInfo(name, srv, oldState);
+	m_resources.push_back(externalSrv);
+}
+
+uint32_t RenderGraph::addExternalUav(std::string_view name, UnorderedAccessView* uav, ResourceState oldState)
+{
+	uint32_t handle = m_resources.size();
+	ExternalUavInfo* externalUav = new ExternalUavInfo(name, uav, oldState);
+	m_resources.push_back(externalUav);
+}
+
+ScenePass* RenderGraph::addScenePass(std::string_view name)
 {
 	return addPass<ScenePass>(name);
 }
 
-ImagePass* RenderGraph::addImagePass(const char* name)
+ImagePass* RenderGraph::addImagePass(std::string_view name)
 {
 	return addPass<ImagePass>(name);	
 }
 
-ComputePass* RenderGraph::addComputePass(const char* name)
+ComputePass* RenderGraph::addComputePass(std::string_view name)
 {
 	return addPass<ComputePass>(name);
 }
 
-RayTracingPass* RenderGraph::addRayTracingPass(const char* name)
+RayTracingPass* RenderGraph::addRayTracingPass(std::string_view name)
 {
 	return addPass<RayTracingPass>(name);
 }

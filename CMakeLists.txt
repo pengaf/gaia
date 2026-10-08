@@ -17,7 +17,7 @@ set(GAIA_PAF_PATH "D:/pengaf/idlcpp2/paf/" CACHE PATH "Path to the PAF include/r
 function(gaia_register_source_group group)
     cmake_parse_arguments(GAIA_GROUP "" "" "FILES" ${ARGN})
     set_property(GLOBAL APPEND PROPERTY GAIA_SOURCE_GROUP_NAMES "${group}")
-    set_property(GLOBAL PROPERTY "GAIA_SOURCE_GROUP_FILES_${group}" "${GAIA_GROUP_FILES}")
+    set_property(GLOBAL APPEND PROPERTY "GAIA_SOURCE_GROUP_FILES_${group}" ${GAIA_GROUP_FILES})
 endfunction()
 
 function(gaia_add_idlcpp_sources target)
@@ -93,6 +93,37 @@ function(gaia_add_idlcpp_sources target)
         set_property(GLOBAL PROPERTY "GAIA_IDL_OPTIONS_${idlcpp_request_id}" "${generator_options}")
         set_property(GLOBAL PROPERTY "GAIA_IDL_DEPENDS_${idlcpp_request_id}" "${interface_paths}")
         set_property(GLOBAL PROPERTY "GAIA_IDL_WORKING_DIRECTORY_${idlcpp_request_id}" "${interface_directory}")
+
+        set_source_files_properties(
+            ${generated_header}
+            ${generated_internal}
+            ${generated_meta_header}
+            ${generated_meta_source}
+            PROPERTIES GENERATED TRUE
+        )
+
+        get_target_property(target_source_directory "${target}" SOURCE_DIR)
+        file(RELATIVE_PATH generated_group_directory
+            "${target_source_directory}"
+            "${interface_directory}"
+        )
+        if(generated_group_directory STREQUAL "")
+            set(generated_group "Generated Files")
+        else()
+            set(generated_group "${generated_group_directory}/Generated Files")
+        endif()
+        target_sources(${target} PRIVATE
+            ${generated_header}
+            ${generated_internal}
+            ${generated_meta_header}
+            ${generated_meta_source}
+        )
+        gaia_register_source_group("${generated_group}" FILES
+            ${generated_header}
+            ${generated_internal}
+            ${generated_meta_header}
+            ${generated_meta_source}
+        )
     endforeach()
 
 endfunction()
@@ -106,19 +137,15 @@ function(gaia_finalize_idlcpp_sources target)
         get_property(generator_options GLOBAL PROPERTY "GAIA_IDL_OPTIONS_${idl_request_id}")
         get_property(interface_dependencies GLOBAL PROPERTY "GAIA_IDL_DEPENDS_${idl_request_id}")
         get_property(interface_directory GLOBAL PROPERTY "GAIA_IDL_WORKING_DIRECTORY_${idl_request_id}")
-        set(stamp_file "${CMAKE_CURRENT_BINARY_DIR}/idlcpp_${idl_request_id}.stamp")
-
         add_custom_command(
-            OUTPUT "${stamp_file}"
+            OUTPUT ${generated_outputs}
             MAIN_DEPENDENCY "${interface_path}"
             COMMAND "${IDLCPP_EXECUTABLE}" ${generator_options} "${interface_path}"
-            COMMAND "${CMAKE_COMMAND}" -E touch "${stamp_file}"
             DEPENDS "${IDLCPP_EXECUTABLE}" ${interface_dependencies}
             WORKING_DIRECTORY "${interface_directory}"
             VERBATIM
         )
 
-        target_sources(${target} PRIVATE "${stamp_file}")
     endforeach()
 endfunction()
 

@@ -6,7 +6,27 @@
 #define BEGIN_GAIA namespace gaia {
 #define END_GAIA }
 
-#define AITL_ARG(T, name, init)				                            \
+#define AITL_ARG(T, name)				                            \
+ public:                                                                \
+  inline auto name(const T& new_##name)->decltype(*this) { /* NOLINT */ \
+    this->m_##name = new_##name;										\
+    return *this;                                                       \
+  }                                                                     \
+  inline auto name(T&& new_##name)->decltype(*this) { /* NOLINT */      \
+    this->m_##name = std::move(new_##name);                             \
+    return *this;                                                       \
+  }                                                                     \
+  inline const T& name() const noexcept { /* NOLINT */                  \
+    return this->m_##name;                                              \
+  }                                                                     \
+  inline T& name() noexcept { /* NOLINT */                              \
+    return this->m_##name;                                              \
+  }                                                                     \
+ protected:                                                             \
+  T m_##name{} /* NOLINT */
+
+
+#define AITL_ARG_EX(T, name, init)				                        \
  public:                                                                \
   inline auto name(const T& new_##name)->decltype(*this) { /* NOLINT */ \
     this->m_##name = new_##name;										\
@@ -25,7 +45,20 @@
  protected:                                                             \
   T m_##name{init} /* NOLINT */
 
-#define AITL_ARG_RO(T, name, init)						                \
+
+#define AITL_ARG_RO(T, name)						                    \
+ public:                                                                \
+  inline const T& name() const noexcept { /* NOLINT */                  \
+    return this->m_##name;                                              \
+  }                                                                     \
+  inline T& name() noexcept { /* NOLINT */                              \
+    return this->m_##name;                                              \
+  }                                                                     \
+ protected:                                                             \
+  T m_##name{} /* NOLINT */
+
+
+#define AITL_ARG_RO_EX(T, name, init)						            \
  public:                                                                \
   inline const T& name() const noexcept { /* NOLINT */                  \
     return this->m_##name;                                              \

@@ -1,5 +1,6 @@
 #pragma once
 #include "utility.h"
+#include <string>
 
 BEGIN_GAIA
 
@@ -17,7 +18,7 @@ public:
     }
 protected:
     RenderPassKind m_kind;
-    const char* m_name;
+    std::string m_name;
 };
 
 class ScenePass : public RenderPass

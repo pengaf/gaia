@@ -11,6 +11,23 @@ const uint32_t gaia_max_color_attment_count = 8; //
 const uint32_t gaia_max_vertex_buffer_bind_count = 8; //webgpu 8, d3d12 32, vulkan 16, metal 31
 const uint32_t gaia_max_swapchain_image_count = 4;
 
+enum class ResourceState
+{
+    undefined,
+    common,
+    copy_src,
+    copy_dst,
+    shader_resource,
+    unordered_access,
+    render_target,
+    depth_stencil,
+    vertex_buffer,
+    index_buffer,
+    uniform_buffer,
+    indirect_args,
+    present,
+};
+
 enum class TextureFormat
 {
     // 8 bit formats
@@ -333,6 +350,8 @@ struct BufferDesc
     uint64_t size;
     BufferUsage bufferUsage;
     CpuAccess cpuAccess;
+
+    auto operator<=>(const BufferDesc& other) const = default;
 };
 
 struct TextureDesc
@@ -346,6 +365,8 @@ struct TextureDesc
     TextureFormat format;
     TextureUsage textureUsage;
     CpuAccess cpuAccess;
+
+    auto operator<=>(const TextureDesc& other) const = default;
 };
 
 struct SamplerState 
