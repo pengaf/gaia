@@ -1,25 +1,19 @@
 #pragma once
 
-#include "utility.h"
-#include "common.h"
-#include <vector>
-#include <string>
-#include <memory>
+#include "render_graph.h"
 
 BEGIN_GAIA
 
-class RenderGraphCompiler;
-class GraphicsPipelineState;
-class ComputePipelineState;
-class RayTracingPipelineState;
-class ShaderResourceView;
-class UnorderedAccessView;
-class RenderTargetView;
-class SwapChainView;
-
-class RenderGraph
+class CompiledRenderGraph
 {
 public:
+	struct Barrier
+	{
+		uint32_t resource;
+		ResourceState oldState;
+		ResourceState newState;
+	};
+
 	class Pass
 	{
 	public:
@@ -28,6 +22,7 @@ public:
 	public:
 		AITL_ARG_RO(RenderPassKind, kind);
 		AITL_ARG_RO(std::string, name);
+		AITL_ARG(std::vector<Barrier>, barriers);
 	};
 
 	class ScenePass : public Pass
@@ -92,19 +87,8 @@ public:
 	};
 
 public:
-	enum class ResourceKind
-	{
-		texture,
-		buffer,
-		external,
-	};
-	enum class ViewKind
-	{
-		srv,
-		uav,
-		rtv,
-		scv,
-	};
+	using ResourceKind = RenderGraph::ResourceKind;
+	using ViewKind = RenderGraph::ViewKind;
 
 	struct Resource
 	{

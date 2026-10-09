@@ -1,5 +1,6 @@
 set(source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/pass.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/compiled_render_graph.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/render_graph.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/render_graph_compiler.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/static_mesh_renderable_3d.cpp
@@ -7,6 +8,7 @@ set(source_files
 
 set(header_files
     ${CMAKE_CURRENT_SOURCE_DIR}/common.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/compiled_render_graph.h
     ${CMAKE_CURRENT_SOURCE_DIR}/depth_stencil_view.h
     ${CMAKE_CURRENT_SOURCE_DIR}/forward_renderer.h
     ${CMAKE_CURRENT_SOURCE_DIR}/frame_graph.h
@@ -17,7 +19,6 @@ set(header_files
     ${CMAKE_CURRENT_SOURCE_DIR}/render_graph.h
     ${CMAKE_CURRENT_SOURCE_DIR}/render_graph_compiler.h
     ${CMAKE_CURRENT_SOURCE_DIR}/render_output.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/render_pass.h
     ${CMAKE_CURRENT_SOURCE_DIR}/render_state.h
     ${CMAKE_CURRENT_SOURCE_DIR}/render_target_view.h
     ${CMAKE_CURRENT_SOURCE_DIR}/render_window.h
