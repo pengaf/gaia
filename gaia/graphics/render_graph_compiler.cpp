@@ -28,8 +28,8 @@ inline uint64_t fnv1a_64(const T& value, uint64_t hash = 0xcbf29ce484222325ull)
 namespace
 {
 
-	const uint32_t invalid_resource = UINT32_MAX;
-	const uint32_t invalid_pass = UINT32_MAX;
+	constexpr uint32_t invalid_pass = UINT32_MAX;
+	constexpr uint32_t invalid_resource = RenderGraph::invalid_resource;
 
 	struct ResourceToPass
 	{
@@ -168,10 +168,10 @@ namespace
 		for (uint32_t i = 0; i < resourceCount; ++i)
 		{
 			auto* info = renderGraph->m_resources[i].get();
-			if (info->kind == RenderGraph::ResourceKind::external)
+			if (info->isExternal())
 			{
 				auto* ext = static_cast<RenderGraph::ExternalResource*>(info);
-				auto it = viewMap.find(ext->view);
+				auto it = viewMap.find(ext->resource());
 				if (it != viewMap.end())
 				{
 					RenderGraphCompiler::ErrorInfo errorInfo;
@@ -181,7 +181,7 @@ namespace
 				}
 				else
 				{
-					viewMap[ext->view] = i;
+					viewMap[ext->resource()] = i;
 				}
 			}
 		}
@@ -196,7 +196,7 @@ namespace
 		if (resource >= (uint32_t)renderGraph->m_resources.size())
 		{
 			RenderGraphCompiler::ErrorInfo errorInfo;
-			errorInfo.errorCode = RenderGraphCompiler::ErrorCode::invalid_resource;
+			errorInfo.errorCode = RenderGraphCompiler::ErrorCode::resource_out_of_range;
 			errorInfo.resource = resource;
 			errorInfo.pass = pass;
 			errorInfos.push_back(errorInfo);
@@ -228,7 +228,7 @@ namespace
 		if (CheckResourceValid(errorInfos, renderGraph, resource, pass))
 		{
 			RenderGraph::Resource* resourceInfo = renderGraph->resource(resource);
-			if (RenderGraph::ResourceKind::external == resourceInfo->kind)
+			if (resourceInfo->isExternal())
 			{
 				RenderGraphCompiler::ErrorInfo errorInfo;
 				errorInfo.errorCode = RenderGraphCompiler::ErrorCode::external_resource_written;
@@ -255,7 +255,7 @@ namespace
 		uint32_t resource)
 	{
 		RenderGraph::Resource* resourceInfo = renderGraph->resource(resource);
-		if (RenderGraph::ResourceKind::external != resourceInfo->kind && !resourceToPass.IsWritten(resource))
+		if (!resourceInfo->isExternal() && !resourceToPass.IsWritten(resource))
 		{
 			RenderGraphCompiler::ErrorInfo errorInfo;
 			errorInfo.errorCode = RenderGraphCompiler::ErrorCode::resource_not_written;
@@ -277,40 +277,40 @@ namespace
 			switch (pass->kind())
 			{
 			case RenderPassKind::scene_pass:
-				MarkResourceWrite(errorInfos, resourceToPass, renderGraph, static_cast<RenderGraph::ScenePass*>(pass)->dsv(), passIndex);
-				for (uint32_t rtv : static_cast<RenderGraph::ScenePass*>(pass)->rtvs())
+				MarkResourceWrite(errorInfos, resourceToPass, renderGraph, static_cast<RenderGraph::ScenePass*>(pass)->dsv().resource, passIndex);
+				for (auto& rtv : static_cast<RenderGraph::ScenePass*>(pass)->rtvs())
 				{
-					MarkResourceWrite(errorInfos, resourceToPass, renderGraph, rtv, passIndex);
+					MarkResourceWrite(errorInfos, resourceToPass, renderGraph, rtv.resource, passIndex);
 				}
 				break;
 			case RenderPassKind::image_pass:
-				for (uint32_t srv : static_cast<RenderGraph::ImagePass*>(pass)->srvs())
+				for (auto& srv : static_cast<RenderGraph::ImagePass*>(pass)->srvs())
 				{
-					MarkResourceRead(errorInfos, resourceToPass, renderGraph, srv, passIndex);
+					MarkResourceRead(errorInfos, resourceToPass, renderGraph, srv.resource, passIndex);
 				}
-				for (uint32_t rtv : static_cast<RenderGraph::ImagePass*>(pass)->rtvs())
+				for (auto& rtv : static_cast<RenderGraph::ImagePass*>(pass)->rtvs())
 				{
-					MarkResourceWrite(errorInfos, resourceToPass, renderGraph, rtv, passIndex);
+					MarkResourceWrite(errorInfos, resourceToPass, renderGraph, rtv.resource, passIndex);
 				}
 				break;
 			case RenderPassKind::compute_pass:
-				for (uint32_t srv : static_cast<RenderGraph::ComputePass*>(pass)->srvs())
+				for (auto& srv : static_cast<RenderGraph::ComputePass*>(pass)->srvs())
 				{
-					MarkResourceRead(errorInfos, resourceToPass, renderGraph, srv, passIndex);
+					MarkResourceRead(errorInfos, resourceToPass, renderGraph, srv.resource, passIndex);
 				}
-				for (uint32_t uav : static_cast<RenderGraph::ComputePass*>(pass)->uavs())
+				for (auto& uav : static_cast<RenderGraph::ComputePass*>(pass)->uavs())
 				{
-					MarkResourceWrite(errorInfos, resourceToPass, renderGraph, uav, passIndex);
+					MarkResourceWrite(errorInfos, resourceToPass, renderGraph, uav.resource, passIndex);
 				}
 				break;
 			case RenderPassKind::ray_tracing_pass:
-				for (uint32_t srv : static_cast<RenderGraph::RayTracingPass*>(pass)->srvs())
+				for (auto& srv : static_cast<RenderGraph::RayTracingPass*>(pass)->srvs())
 				{
-					MarkResourceRead(errorInfos, resourceToPass, renderGraph, srv, passIndex);
+					MarkResourceRead(errorInfos, resourceToPass, renderGraph, srv.resource, passIndex);
 				}
-				for (uint32_t uav : static_cast<RenderGraph::RayTracingPass*>(pass)->uavs())
+				for (auto& uav : static_cast<RenderGraph::RayTracingPass*>(pass)->uavs())
 				{
-					MarkResourceWrite(errorInfos, resourceToPass, renderGraph, uav, passIndex);
+					MarkResourceWrite(errorInfos, resourceToPass, renderGraph, uav.resource, passIndex);
 				}
 				break;
 			}
@@ -543,7 +543,7 @@ namespace
 	};
 
 	std::vector<uint32_t> BuildCompiledResources(
-		CompiledRenderGraph* output,
+		CompiledRenderGraph* compiledRenderGraph,
 		const RenderGraph* renderGraph,
 		const std::vector<uint32_t>& executionOrder,
 		const PassToResource& passToResource,
@@ -575,17 +575,17 @@ namespace
 					continue;
 				}
 				auto* info = renderGraph->resource(resource);
-				if (info->kind == RenderGraph::ResourceKind::external)
+				if (info->isExternal())
 				{
 					auto* ext = static_cast<RenderGraph::ExternalResource*>(info);
-					uint32_t slot = output->addExternalResource(ext->name, ext->viewKind, ext->view, ext->oldState);
+					uint32_t slot = compiledRenderGraph->cloneExternalResource(ext);
 					resourceToSlot[resource] = slot;
-					slotLifecycles.push_back({ invalid_pass, invalid_pass, info->name });
+					slotLifecycles.push_back({ invalid_pass, invalid_pass, info->name()});
 				}
-				else if (info->kind == RenderGraph::ResourceKind::texture)
+				else if (info->kind() == RenderGraph::ResourceKind::texture)
 				{
 					auto* tex = static_cast<RenderGraph::Texture*>(info);
-					auto it = freeTextureByDesc.find(tex->desc);
+					auto it = freeTextureByDesc.find(tex->desc());
 					bool allocated = false;
 					if (it != freeTextureByDesc.end())
 					{
@@ -599,7 +599,7 @@ namespace
 								resourceToSlot[resource] = slot;
 								slotLifecycles[slot].firstUsePass = std::min(slotLifecycles[slot].firstUsePass, lifecycles.items[resource].firstUsePass);
 								slotLifecycles[slot].lastUsePass = std::max(slotLifecycles[slot].lastUsePass, lifecycles.items[resource].lastUsePass);
-								slotLifecycles[slot].name += "," + info->name;
+								slotLifecycles[slot].name += "," + info->name();
 								freeList.erase(slotIt);
 								allocated = true;
 								break;
@@ -608,15 +608,15 @@ namespace
 					}
 					if (!allocated)
 					{
-						uint32_t slot = output->addTexture(tex->name, tex->desc);
+						uint32_t slot = compiledRenderGraph->addTexture(tex->name(), tex->desc());
 						resourceToSlot[resource] = slot;
-						slotLifecycles.push_back({lifecycles.items[resource].firstUsePass, lifecycles.items[resource].lastUsePass, info->name });
+						slotLifecycles.push_back({lifecycles.items[resource].firstUsePass, lifecycles.items[resource].lastUsePass, info->name() });
 					}
 				}
-				else if (info->kind == RenderGraph::ResourceKind::buffer)
+				else if (info->kind() == RenderGraph::ResourceKind::buffer)
 				{
 					auto* buf = static_cast<RenderGraph::Buffer*>(info);
-					auto it = freeBufferByDesc.find(buf->desc);
+					auto it = freeBufferByDesc.find(buf->desc());
 					bool allocated = false;
 					if (it != freeBufferByDesc.end())
 					{
@@ -630,7 +630,7 @@ namespace
 								resourceToSlot[resource] = slot;
 								slotLifecycles[slot].firstUsePass = std::min(slotLifecycles[slot].firstUsePass, lifecycles.items[resource].firstUsePass);
 								slotLifecycles[slot].lastUsePass = std::max(slotLifecycles[slot].lastUsePass, lifecycles.items[resource].lastUsePass);
-								slotLifecycles[slot].name += "," + info->name;
+								slotLifecycles[slot].name += "," + info->name();
 								freeList.erase(slotIt);
 								allocated = true;
 								break;
@@ -639,9 +639,9 @@ namespace
 					}
 					if (!allocated)
 					{
-						uint32_t slot = output->addBuffer(buf->name, buf->desc);
+						uint32_t slot = compiledRenderGraph->addBuffer(buf->name(), buf->desc());
 						resourceToSlot[resource] = slot;
-						slotLifecycles.push_back({ lifecycles.items[resource].firstUsePass, lifecycles.items[resource].lastUsePass, info->name });
+						slotLifecycles.push_back({ lifecycles.items[resource].firstUsePass, lifecycles.items[resource].lastUsePass, info->name() });
 					}
 				}
 			}
@@ -652,17 +652,17 @@ namespace
 					{
 						uint32_t slot = resourceToSlot[resource];
 						auto* info = renderGraph->resource(resource);
-						output->m_resources[slot]->name = slotLifecycles[slot].name;
+						compiledRenderGraph->m_resources[slot]->name() = slotLifecycles[slot].name;
 
-						if (info->kind == RenderGraph::ResourceKind::texture)
+						if (info->kind() == RenderGraph::ResourceKind::texture)
 						{
 							auto* tex = static_cast<RenderGraph::Texture*>(info);
-							freeTextureByDesc[tex->desc].push_back(slot);
+							freeTextureByDesc[tex->desc()].push_back(slot);
 						}
-						else if (info->kind == RenderGraph::ResourceKind::buffer)
+						else if (info->kind() == RenderGraph::ResourceKind::buffer)
 						{
 							auto* buf = static_cast<RenderGraph::Buffer*>(info);
-							freeBufferByDesc[buf->desc].push_back(slot);
+							freeBufferByDesc[buf->desc()].push_back(slot);
 						}
 					}
 				};
@@ -677,6 +677,149 @@ namespace
 			}
 		}
 		return resourceToSlot;
+	}
+
+	void BuildCompiledPasses(
+		CompiledRenderGraph* compiledRenderGraph,
+		const RenderGraph* renderGraph,
+		const std::vector<uint32_t>& executionOrder,
+		const std::vector<uint32_t>& resourceToSlot)
+	{
+		uint32_t passCount = (uint32_t)executionOrder.size();
+
+		for (uint32_t order = 0; order < passCount; ++order)
+		{
+			uint32_t passIndex = executionOrder[order];
+			auto* srcPass = renderGraph->pass(passIndex);
+
+			switch (srcPass->kind())
+			{
+			case RenderPassKind::scene_pass:
+			{
+				auto* srcScenePass = static_cast<RenderGraph::ScenePass*>(srcPass);
+				auto* dstScenePass = compiledRenderGraph->addScenePass(srcScenePass->name());
+
+				for (auto& rtv : srcScenePass->rtvs())
+				{
+					dstScenePass->addRTV(resourceToSlot[rtv.resource], rtv.desc);
+				}
+				if (srcScenePass->dsv().resource != invalid_resource)
+				{
+					dstScenePass->setDSV(resourceToSlot[srcScenePass->dsv().resource], srcScenePass->dsv().desc);
+				}
+				break;
+			}
+			case RenderPassKind::image_pass:
+			{
+				auto* srcImagePass = static_cast<RenderGraph::ImagePass*>(srcPass);
+				auto* dstImagePass = compiledRenderGraph->addImagePass(srcImagePass->name());
+
+				for (auto& srv : srcImagePass->srvs())
+				{
+					dstImagePass->addSRV(resourceToSlot[srv.resource], srv.desc);
+				}
+				for (auto& rtv : srcImagePass->rtvs())
+				{
+					dstImagePass->addRTV(resourceToSlot[rtv.resource], rtv.desc);
+				}
+				dstImagePass->pipeline(srcImagePass->pipeline());
+				break;
+			}
+			case RenderPassKind::compute_pass:
+			{
+				auto* srcComputePass = static_cast<RenderGraph::ComputePass*>(srcPass);
+				auto* dstComputePass = compiledRenderGraph->addComputePass(srcComputePass->name());
+
+				for (auto& srv : srcComputePass->srvs())
+				{
+					dstComputePass->addSRV(resourceToSlot[srv.resource], srv.desc);
+				}
+				for (auto& uav : srcComputePass->uavs())
+				{
+					dstComputePass->addUAV(resourceToSlot[uav.resource], uav.desc);
+				}
+				dstComputePass->pipeline(srcComputePass->pipeline());
+				break;
+			}
+			case RenderPassKind::ray_tracing_pass:
+			{
+				auto* srcRayTracingPass = static_cast<RenderGraph::RayTracingPass*>(srcPass);
+				auto* dstRayTracingPass = compiledRenderGraph->addRayTracingPass(srcRayTracingPass->name());
+
+				for (auto& srv : srcRayTracingPass->srvs())
+				{
+					dstRayTracingPass->addSRV(resourceToSlot[srv.resource], srv.desc);
+				}
+				for (auto& uav : srcRayTracingPass->uavs())
+				{
+					dstRayTracingPass->addUAV(resourceToSlot[uav.resource], uav.desc);
+				}
+				dstRayTracingPass->pipeline(srcRayTracingPass->pipeline());
+				break;
+			}
+			default:
+				GAIA_ASSERT(false && "Unknown pass kind");
+				break;
+			}
+		}
+	}
+
+	void BuildCompiledBarriers(
+		CompiledRenderGraph* output,
+		const RenderGraph* input,
+		const std::vector<uint32_t>& executionOrder,
+		const PassToResource& passToResource,
+		const std::vector<uint32_t>& resourceToSlot)
+	{
+		uint32_t passCount = (uint32_t)executionOrder.size();
+		uint32_t resourceCount = input->resourceCount();
+		uint32_t dstResourceCount = output->resourceCount();
+
+		// 每个 slot 的当前状态
+		std::vector<ResourceState> currentState(output->resourceCount(), ResourceState::undefined);
+
+		for (uint32_t slot = 0; slot < dstResourceCount; ++slot)
+		{
+			auto* compiledResource = output->resource(slot);
+			if (compiledResource->isExternal())
+			{
+				auto* ext = static_cast<const CompiledRenderGraph::ExternalResource*>(compiledResource);
+				currentState[slot] = ext->oldState();
+			}
+		}
+
+		for (uint32_t order = 0; order < passCount; ++order)
+		{
+			uint32_t passIndex = executionOrder[order];
+			auto* outputPass = output->pass(order);
+
+			// 读取：需要 shader_resource
+			for (uint32_t resource : passToResource.items[passIndex].readResources)
+			{
+				uint32_t slot = resourceToSlot[resource];
+				if (currentState[slot] != ResourceState::shader_resource)
+				{
+					outputPass->barriers().push_back({
+						slot, currentState[slot], ResourceState::shader_resource
+						});
+					currentState[slot] = ResourceState::shader_resource;
+				}
+			}
+
+			// 写入：需要目标状态
+			for (uint32_t resource : passToResource.items[passIndex].writeResources)
+			{
+				uint32_t slot = resourceToSlot[resource];
+				ResourceState target = GetTargetState(input->resource(resource), outputPass);
+				if (currentState[slot] != target)
+				{
+					outputPass->barriers().push_back({
+						slot, currentState[slot], target
+						});
+					currentState[slot] = target;
+				}
+			}
+		}
 	}
 }
 
@@ -707,6 +850,8 @@ std::vector<RenderGraphCompiler::ErrorInfo> RenderGraphCompiler::compile(Compile
 	PassToResource passToResource = BuildPassToResource(passCount, resourceToPass);
 
 	std::vector<uint32_t> resourceToSlot = BuildCompiledResources(compiledRenderGraph, renderGraph, executionOrder, passToResource, resourceLifecycle);
+
+	BuildCompiledPasses(compiledRenderGraph, renderGraph, executionOrder, resourceToSlot);
 
 	return errorInfos;
 }

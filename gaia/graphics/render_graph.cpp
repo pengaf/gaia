@@ -34,29 +34,14 @@ uint32_t RenderGraph::addBuffer(std::string_view name, const BufferDesc& desc)
 	return addResource<Buffer>(name, desc);
 }
 
-uint32_t RenderGraph::addExternalResource(std::string_view name, ViewKind viewKind, void* view, ResourceState oldState)
+uint32_t RenderGraph::addExternalTexture(std::string_view name, Texture* texture, ResourceState oldState)
 {
-	return addResource<ExternalResource>(name, viewKind, view, oldState);
+	return addResource<ExternalResource>(name, texture, oldState);
 }
 
-uint32_t RenderGraph::addExternalSrv(std::string_view name, ShaderResourceView* srv, ResourceState oldState)
+uint32_t RenderGraph::addExternalBuffer(std::string_view name, Buffer* buffer, ResourceState oldState)
 {
-	return addResource<ExternalResource>(name, srv, oldState);
-}
-
-uint32_t RenderGraph::addExternalUav(std::string_view name, UnorderedAccessView* uav, ResourceState oldState)
-{
-	return addResource<ExternalResource>(name, uav, oldState);
-}
-
-uint32_t RenderGraph::addExternalRtv(std::string_view name, RenderTargetView* rtv, ResourceState oldState)
-{
-	return addResource<ExternalResource>(name, rtv, oldState);
-}
-
-uint32_t RenderGraph::addExternalScv(std::string_view name, SwapChainView* scv, ResourceState oldState)
-{
-	return addResource<ExternalResource>(name, scv, oldState);
+	return addResource<ExternalResource>(name, buffer, oldState);
 }
 
 RenderGraph::ScenePass* RenderGraph::addScenePass(std::string_view name)

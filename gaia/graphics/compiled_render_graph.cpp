@@ -34,15 +34,29 @@ uint32_t CompiledRenderGraph::addBuffer(std::string_view name, const BufferDesc&
 	return addResource<Buffer>(name, desc);
 }
 
-uint32_t CompiledRenderGraph::addExternalSrv(std::string_view name, ShaderResourceView* srv, ResourceState oldState)
+uint32_t CompiledRenderGraph::cloneExternalResource(ExternalResource* src)
 {
-	return addResource<ExternalSrv>(name, srv, oldState);
+	switch (src->kind())
+	{
+		case ResourceKind::external_texture:
+			return addResource<ExternalResource>(*static_cast<ExternalResource*>(src));
+		case ResourceKind::external_buffer:
+			return addResource<ExternalResource>(*static_cast<ExternalResource*>(src));
+		default:
+			GAIA_ASSERT(false);
+			return invalid_resource;
+	}
 }
 
-uint32_t CompiledRenderGraph::addExternalUav(std::string_view name, UnorderedAccessView* uav, ResourceState oldState)
-{
-	return addResource<ExternalUav>(name, uav, oldState);
-}
+//uint32_t CompiledRenderGraph::addExternalTexture(std::string_view name, Texture* texture, ResourceState oldState)
+//{
+//	return addResource<ExternalResource>(name, texture, oldState);
+//}
+//
+//uint32_t CompiledRenderGraph::addExternalBuffer(std::string_view name, Buffer* buffer, ResourceState oldState)
+//{
+//	return addResource<ExternalResource>(name, buffer, oldState);
+//}
 
 CompiledRenderGraph::ScenePass* CompiledRenderGraph::addScenePass(std::string_view name)
 {

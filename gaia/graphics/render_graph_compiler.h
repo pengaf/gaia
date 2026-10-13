@@ -13,12 +13,9 @@ class RenderGraphCompiler
 public:
 	enum ErrorCode
 	{
-		invalid_resource,
-		resource_not_written,
-		resource_multi_written,
-		external_resource_written,
+		resource_out_of_range,
+		resource_read_before_write,
 		duplicate_external_resource,
-		pass_cyclic_dependency,
 	};
 	struct ErrorInfo
 	{

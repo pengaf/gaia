@@ -30,6 +30,7 @@ enum class ResourceState
 
 enum class TextureFormat
 {
+    unknown,
     // 8 bit formats
     r8_unorm,
     r8_snorm,
@@ -142,7 +143,6 @@ enum class TextureFormat
     astc_12x12_unorm,
     astc_12x12_unorm_srgb,
     count,
-    unknown = count,
 };
 
 
@@ -369,6 +369,95 @@ struct TextureDesc
     auto operator<=>(const TextureDesc& other) const = default;
 };
 
+enum class TextureViewDimension : uint8_t
+{
+    texture_1d,
+    texture_2d,
+    texture_3d,
+    texture_cube,
+    texture_1d_array,
+    texture_2d_array,
+    texture_cube_array,
+};
+
+struct RenderTargetViewDesc
+{
+    TextureViewDimension dimension;
+    TextureFormat format;
+    uint32_t baseMipLevel;
+    uint32_t mipLevelCount;
+    uint32_t baseArrayLayer;
+    uint32_t arrayLayerCount;
+};
+
+struct DepthStencilViewDesc
+{
+    TextureViewDimension dimension;
+    TextureFormat format;
+    uint32_t baseMipLevel;
+    uint32_t mipLevelCount;
+    uint32_t baseArrayLayer;
+    uint32_t arrayLayerCount;
+	bool readOnly;
+};
+
+enum class ShaderResourceKind : uint8_t
+{
+    texture,
+    buffer,
+    texel_buffer,
+};
+
+struct TextureViewDesc
+{
+	TextureViewDimension dimension;
+	TextureFormat format;
+	uint32_t baseMipLevel;
+	uint32_t mipLevelCount;
+	uint32_t baseArrayLayer;
+	uint32_t arrayLayerCount;
+};
+
+struct BufferViewDesc
+{
+	uint64_t offset;
+	uint64_t size;
+	uint32_t stride;
+};
+
+struct TexelBufferViewDesc
+{
+	uint64_t offset;
+	uint64_t size;
+	TextureFormat format;
+};
+
+struct ShaderResourceViewDesc
+{
+    ShaderResourceKind resourceKind;
+    union
+    {
+        TextureViewDesc textureView;
+		BufferViewDesc bufferView;
+		TexelBufferViewDesc texelBufferView;
+    };
+};
+
+struct UnorderedAccessViewDesc
+{
+    ShaderResourceKind resourceKind;
+    union
+    {
+        TextureViewDesc textureView;
+        BufferViewDesc bufferView;
+        TexelBufferViewDesc texelBufferView;
+    };
+};
+
+struct ResourceCopyDesc
+{
+};
+
 struct SamplerState 
 {
     SamplerAddressMode addressU = SamplerAddressMode::wrap;
@@ -565,6 +654,10 @@ enum class RenderPassKind
     image_pass,
     compute_pass,
     ray_tracing_pass,
+    //copy_pass,
+    //clear_pass,
+    //resolve_pass,
+    //blit_pass,
 };
 
 END_GAIA

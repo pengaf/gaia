@@ -17,6 +17,7 @@ set(header_files
     ${CMAKE_CURRENT_SOURCE_DIR}/parallel_pass.h
     ${CMAKE_CURRENT_SOURCE_DIR}/pass.h
     ${CMAKE_CURRENT_SOURCE_DIR}/render_graph.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/render_graph_base.h
     ${CMAKE_CURRENT_SOURCE_DIR}/render_graph_compiler.h
     ${CMAKE_CURRENT_SOURCE_DIR}/render_output.h
     ${CMAKE_CURRENT_SOURCE_DIR}/render_state.h

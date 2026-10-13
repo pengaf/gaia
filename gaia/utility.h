@@ -6,7 +6,7 @@
 #define BEGIN_GAIA namespace gaia {
 #define END_GAIA }
 
-#define AITL_ARG(T, name)				                            \
+#define GAIA_ARG(T, name, ...)				                            \
  public:                                                                \
   inline auto name(const T& new_##name)->decltype(*this) { /* NOLINT */ \
     this->m_##name = new_##name;										\
@@ -23,30 +23,26 @@
     return this->m_##name;                                              \
   }                                                                     \
  protected:                                                             \
-  T m_##name{} /* NOLINT */
+  T m_##name{__VA_ARGS__} /* NOLINT */
 
 
-#define AITL_ARG_EX(T, name, init)				                        \
+#define GAIA_ARG_PTR(T, name, ...)				                        \
  public:                                                                \
-  inline auto name(const T& new_##name)->decltype(*this) { /* NOLINT */ \
+  inline auto name(T* new_##name)->decltype(*this) { /* NOLINT */       \
     this->m_##name = new_##name;										\
     return *this;                                                       \
   }                                                                     \
-  inline auto name(T&& new_##name)->decltype(*this) { /* NOLINT */      \
-    this->m_##name = std::move(new_##name);                             \
-    return *this;                                                       \
-  }                                                                     \
-  inline const T& name() const noexcept { /* NOLINT */                  \
+  inline const T* name() const noexcept { /* NOLINT */                  \
     return this->m_##name;                                              \
   }                                                                     \
-  inline T& name() noexcept { /* NOLINT */                              \
+  inline T* name() noexcept { /* NOLINT */                              \
     return this->m_##name;                                              \
   }                                                                     \
  protected:                                                             \
-  T m_##name{init} /* NOLINT */
+  T* m_##name{__VA_ARGS__} /* NOLINT */
 
 
-#define AITL_ARG_RO(T, name)						                    \
+#define GAIA_ARG_RO(T, name, ...)					                    \
  public:                                                                \
   inline const T& name() const noexcept { /* NOLINT */                  \
     return this->m_##name;                                              \
@@ -55,19 +51,19 @@
     return this->m_##name;                                              \
   }                                                                     \
  protected:                                                             \
-  T m_##name{} /* NOLINT */
+  T m_##name{__VA_ARGS__} /* NOLINT */
 
 
-#define AITL_ARG_RO_EX(T, name, init)						            \
+#define GAIA_ARG_PTR_RO(T, name, ...)					                \
  public:                                                                \
-  inline const T& name() const noexcept { /* NOLINT */                  \
+  inline const T* name() const noexcept { /* NOLINT */                  \
     return this->m_##name;                                              \
   }                                                                     \
-  inline T& name() noexcept { /* NOLINT */                              \
+  inline T* name() noexcept { /* NOLINT */                              \
     return this->m_##name;                                              \
   }                                                                     \
  protected:                                                             \
-  T m_##name{init} /* NOLINT */
+  T* m_##name{__VA_ARGS__} /* NOLINT */
 
 
 #ifndef GAIA_PLATFORM_WEB
