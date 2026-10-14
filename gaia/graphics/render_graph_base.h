@@ -80,22 +80,79 @@ public:
 	};
 
 public:
-	template<typename Desc_t>
-	struct View
+
+	enum class ResourceBindingKind
 	{
-		uint32_t resource = invalid_resource;
-		Desc_t desc;
+		render_target,
+		depth_stencil,
+		shader_resource,
+		unordered_access,
+		copy_src,
+		copy_dst,
+		resolve_src,
+		resolve_dst,
+		blit_src,
+		blit_dst,
+		mipmap_src,
+		mipmap_dst,
 	};
-	using RTV = View<RenderTargetViewDesc>;
-	using DSV = View<DepthStencilViewDesc>;
-	using SRV = View<ShaderResourceViewDesc>;
-	using UAV = View<UnorderedAccessViewDesc>;
+
+	struct ResourceBinding
+	{
+		uint32_t resource;
+		ResourceBindingKind usageKind;
+	public:
+		ResourceBinding(ResourceBindingKind kind) : resource(invalid_resource), usageKind(kind) {};
+		ResourceBinding(uint32_t resource, ResourceBindingKind kind) : resource(resource), usageKind(kind) {};
+
+		bool isRead() const
+		{
+			switch (usageKind)
+			{
+			case ResourceBindingKind::shader_resource:
+			case ResourceBindingKind::copy_src:
+			case ResourceBindingKind::resolve_src:
+			case ResourceBindingKind::mipmap_src:
+				return true;
+			}
+			return false;
+		}
+
+		bool isWrite() const
+		{
+			switch (usageKind)
+			{
+			case ResourceBindingKind::render_target:
+			case ResourceBindingKind::depth_stencil:
+			case ResourceBindingKind::unordered_access:
+			case ResourceBindingKind::copy_dst:
+			case ResourceBindingKind::resolve_dst:
+			case ResourceBindingKind::blit_dst:
+			case ResourceBindingKind::mipmap_dst:
+				return true;
+			}
+			return false;
+		}
+	};
+
+	template<ResourceBindingKind t_kind, typename Desc_t>
+	struct ResourceBinding_t : ResourceBinding
+	{
+		Desc_t usageDesc;
+		ResourceBinding_t() : ResourceBinding(t_kind) {}
+		ResourceBinding_t(uint32_t resource, const Desc_t& desc) : ResourceBinding(resource, t_kind), usageDesc(desc) {}
+	};
+
+	using RTV = ResourceBinding_t<ResourceBindingKind::render_target, RenderTargetViewDesc>;
+	using DSV = ResourceBinding_t<ResourceBindingKind::depth_stencil, DepthStencilViewDesc>;
+	using SRV = ResourceBinding_t<ResourceBindingKind::shader_resource, ShaderResourceViewDesc>;
+	using UAV = ResourceBinding_t<ResourceBindingKind::unordered_access, UnorderedAccessViewDesc>;
 
 	struct Barrier
 	{
 		uint32_t resource;
-		ResourceState oldState;
-		ResourceState newState;
+		ResourceBinding* oldUsage;
+		ResourceBinding* newUsage;
 	};
 
 	template<bool t_compiled>
@@ -115,6 +172,7 @@ public:
 	public:
 		Pass(std::string_view name, RenderPassKind kind) : m_name(name), m_kind(kind) {}
 		virtual ~Pass() = default;
+		virtual void collectResourceBindings(std::vector<const ResourceBinding*>& resourceBindings) const = 0;
 	public:
 		GAIA_ARG_RO(RenderPassKind, kind);
 		GAIA_ARG_RO(std::string, name);
@@ -144,23 +202,6 @@ public:
 	//	GAIA_ARG(ResourceCopyDesc, desc);
 	//};
 
-	//template<bool t_compiled>
-	//class ClearPass : public Pass<t_compiled>
-	//{
-	//public:
-	//	void addColorClear(uint32_t resource, const ClearColorValue& clearValue)
-	//	{
-	//		m_colorClears.push_back({ resource, clearValue });
-	//	}
-	//	void addDepthStencilClear(uint32_t resource, const ClearDepthStencilValue& clearValue)
-	//	{
-	//		m_depthClears.push_back({ resource, clearValue });
-	//	}
-	//public:
-	//	GAIA_ARG_RO(std::vector<std::pair<uint32_t, ClearColorValue>>, colorClears);
-	//	GAIA_ARG_RO(std::vector<std::pair<uint32_t, ClearDepthStencilValue>>, depthClears);
-	//};
-
 	template<bool t_compiled>
 	class ScenePass : public Pass<t_compiled>
 	{
@@ -174,6 +215,17 @@ public:
 		void setDSV(uint32_t resource, const DepthStencilViewDesc& desc)
 		{
 			m_dsv = { resource, desc };
+		}
+		virtual void collectResourceBindings(std::vector<const ResourceBinding*>& resourceBindings) const override
+		{
+			for (auto& rtv : m_rtvs)
+			{
+				resourceBindings.push_back(&rtv);
+			}
+			if (invalid_resource != m_dsv.resource)
+			{
+				resourceBindings.push_back(&m_dsv);
+			}
 		}
 	public:
 		GAIA_ARG_RO(std::vector<RTV>, rtvs);
@@ -193,6 +245,17 @@ public:
 		void addRTV(uint32_t resource, const RenderTargetViewDesc& desc)
 		{
 			m_rtvs.push_back({ resource, desc });
+		}
+		virtual void collectResourceBindings(std::vector<const ResourceBinding*>& resourceBindings) const override
+		{
+			for (auto& srv : m_srvs)
+			{
+				resourceBindings.push_back(&srv);
+			}
+			for (auto& rtv : m_rtvs)
+			{
+				resourceBindings.push_back(&rtv);
+			}
 		}
 	public:
 		GAIA_ARG_RO(std::vector<SRV>, srvs);
@@ -214,6 +277,17 @@ public:
 		{
 			m_uavs.push_back({ resource, desc });
 		}
+		virtual void collectResourceBindings(std::vector<const ResourceBinding*>& resourceBindings) const override
+		{
+			for (auto& srv : m_srvs)
+			{
+				resourceBindings.push_back(&srv);
+			}
+			for (auto& uav : m_uavs)
+			{
+				resourceBindings.push_back(&uav);
+			}
+		}
 	public:
 		GAIA_ARG_RO(std::vector<SRV>, srvs);
 		GAIA_ARG_RO(std::vector<UAV>, uavs);
@@ -233,6 +307,17 @@ public:
 		void addUAV(uint32_t resource, const UnorderedAccessViewDesc& desc)
 		{
 			m_uavs.push_back({ resource, desc });
+		}
+		virtual void collectResourceBindings(std::vector<const ResourceBinding*>& resourceBindings) const override
+		{
+			for (auto& srv : m_srvs)
+			{
+				resourceBindings.push_back(&srv);
+			}
+			for (auto& uav : m_uavs)
+			{
+				resourceBindings.push_back(&uav);
+			}
 		}
 	public:
 		GAIA_ARG_RO(std::vector<SRV>, srvs);

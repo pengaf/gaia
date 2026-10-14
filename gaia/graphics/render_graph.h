@@ -1,6 +1,6 @@
 #pragma once
-
 #include "render_graph_base.h"
+#include "pafcore/flat_set.h"
 
 BEGIN_GAIA
 
@@ -41,9 +41,18 @@ public:
 		GAIA_ASSERT(index < m_passes.size());
 		return m_passes[index].get();
 	}
+	void markOutputResource(uint32_t resource)
+	{
+		m_outputs.insert(resource);
+	}
+	bool isOutputResource(uint32_t resource) const
+	{
+		return m_outputs.find(resource) != m_outputs.end();
+	}
 public:
 	std::vector<std::unique_ptr<Resource>> m_resources;
 	std::vector<std::unique_ptr<Pass>> m_passes;
+	pafcore::FlatSet<uint32_t> m_outputs;
 private:
 	template<typename T>
 	T* addPass(std::string_view name);
