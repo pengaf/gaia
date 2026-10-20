@@ -5,7 +5,7 @@
 BEGIN_GAIA
 
 template<typename T>
-T* CompiledRenderGraph::addPass(std::string_view name)
+T* CompiledRenderGraph::addPass_(std::string_view name)
 {
 	static_assert(std::is_base_of_v<Pass, T>, "T must derive from Pass");
 	auto pass = std::make_unique<T>(name);
@@ -15,7 +15,7 @@ T* CompiledRenderGraph::addPass(std::string_view name)
 }
 
 template<typename T, class...Args>
-uint32_t CompiledRenderGraph::addResource(Args&&... args)
+uint32_t CompiledRenderGraph::addResource_(Args&&... args)
 {
 	static_assert(std::is_base_of_v<Resource, T>, "T must derive from Resource");
 	uint32_t handle = (uint32_t)m_resources.size();
@@ -26,56 +26,66 @@ uint32_t CompiledRenderGraph::addResource(Args&&... args)
 
 uint32_t CompiledRenderGraph::addTexture(std::string_view name, const TextureDesc& desc)
 {
-	return addResource<Texture>(name, desc);
+	return addResource_<Texture>(name, desc);
 }
 
 uint32_t CompiledRenderGraph::addBuffer(std::string_view name, const BufferDesc& desc)
 {
-	return addResource<Buffer>(name, desc);
+	return addResource_<Buffer>(name, desc);
 }
 
-uint32_t CompiledRenderGraph::cloneExternalResource(ExternalResource* src)
+uint32_t CompiledRenderGraph::cloneExternalTexture(ExternalTexture* externalTexture)
 {
-	switch (src->kind())
-	{
-		case ResourceKind::external_texture:
-			return addResource<ExternalResource>(*static_cast<ExternalResource*>(src));
-		case ResourceKind::external_buffer:
-			return addResource<ExternalResource>(*static_cast<ExternalResource*>(src));
-		default:
-			GAIA_ASSERT(false);
-			return invalid_resource;
-	}
+	return addResource_<ExternalTexture>(*externalTexture);
 }
 
-//uint32_t CompiledRenderGraph::addExternalTexture(std::string_view name, Texture* texture, ResourceState oldState)
-//{
-//	return addResource<ExternalResource>(name, texture, oldState);
-//}
-//
-//uint32_t CompiledRenderGraph::addExternalBuffer(std::string_view name, Buffer* buffer, ResourceState oldState)
-//{
-//	return addResource<ExternalResource>(name, buffer, oldState);
-//}
+uint32_t CompiledRenderGraph::cloneExternalBuffer(ExternalBuffer* externalBuffer)
+{
+	return addResource_<ExternalBuffer>(*externalBuffer);
+}
 
 CompiledRenderGraph::ScenePass* CompiledRenderGraph::addScenePass(std::string_view name)
 {
-	return addPass<ScenePass>(name);
+	return addPass_<ScenePass>(name);
 }
 
 CompiledRenderGraph::ImagePass* CompiledRenderGraph::addImagePass(std::string_view name)
 {
-	return addPass<ImagePass>(name);
+	return addPass_<ImagePass>(name);
 }
 
 CompiledRenderGraph::ComputePass* CompiledRenderGraph::addComputePass(std::string_view name)
 {
-	return addPass<ComputePass>(name);
+	return addPass_<ComputePass>(name);
 }
 
 CompiledRenderGraph::RayTracingPass* CompiledRenderGraph::addRayTracingPass(std::string_view name)
 {
-	return addPass<RayTracingPass>(name);
+	return addPass_<RayTracingPass>(name);
+}
+
+CompiledRenderGraph::Pass* CompiledRenderGraph::addPassFromSource(const RenderGraphBase::Pass<false>* srcPass)
+{
+	Pass* dstPass = nullptr;
+	switch (srcPass->kind())
+	{
+	case RenderPassKind::scene_pass:
+		dstPass = addScenePass(srcPass->name());
+		break;
+	case RenderPassKind::image_pass:
+		dstPass = addImagePass(srcPass->name());
+		break;
+	case RenderPassKind::compute_pass:
+		dstPass = addComputePass(srcPass->name());
+		break;
+	case RenderPassKind::ray_tracing_pass:
+		dstPass = addRayTracingPass(srcPass->name());
+		break;
+	default:
+		GAIA_ASSERT(false && "Unknown pass kind");
+		break;
+	}
+	return dstPass;
 }
 
 void CompiledRenderGraph::reset()

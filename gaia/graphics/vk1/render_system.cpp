@@ -1,6 +1,7 @@
 #include "render_system.h"
 #include "render_window.h"
 #include "shader.h"
+#include "detail/mapping.h"
 #include <vector>
 #include <iostream>
 
@@ -534,6 +535,131 @@ bool RenderSystem::initialize(const RenderSystemConfig& config)
 	return true;
 }
 	
+BufferHandle RenderSystem::createBufferHandle(const BufferDesc& desc)
+{
+	VkBufferCreateInfo bufferCreateInfo
+	{
+		.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+		.size = desc.size,
+		.usage = MappingBufferUsage(desc.bufferUsage),
+		.sharingMode = VK_SHARING_MODE_EXCLUSIVE
+	};
+
+	VmaAllocationCreateInfo allocationCreateInfo = {};
+	allocationCreateInfo.flags = 0;
+
+	switch (desc.cpuAccess)
+	{
+	case CpuAccess::none:
+		allocationCreateInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+		break;
+	case CpuAccess::write:
+		allocationCreateInfo.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
+		allocationCreateInfo.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
+		break;
+	case CpuAccess::read:
+		allocationCreateInfo.usage = VMA_MEMORY_USAGE_GPU_TO_CPU;
+		allocationCreateInfo.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT;
+		break;
+	}
+
+	const uint64_t big_resource_threshold = 1024 * 1024 * 32;
+	if (desc.size > big_resource_threshold)
+	{
+		allocationCreateInfo.flags |= VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT;
+	}
+
+	VkBuffer buffer = VK_NULL_HANDLE;
+	VmaAllocation allocation = VK_NULL_HANDLE;
+	VmaAllocationInfo allocationInfo = {};
+
+	VkResult result = vmaCreateBuffer(m_allocator, &bufferCreateInfo, &allocationCreateInfo, &buffer, &allocation, &allocationInfo);
+
+	if (result != VK_SUCCESS)
+	{
+		return BufferHandle(VK_NULL_HANDLE, VK_NULL_HANDLE);
+	}
+	else
+	{
+		return BufferHandle(buffer, allocation);
+	}
+}
+
+void RenderSystem::destroyBufferHandle(BufferHandle bufferHandle)
+{
+	if (bufferHandle.isValid())
+	{
+		vmaDestroyBuffer(m_allocator, bufferHandle.buffer(), bufferHandle.allocation());
+	}
+}
+
+TextureHandle RenderSystem::createTextureHandle(const TextureDesc& desc)
+{
+	VkImageCreateInfo imageCreateInfo{};
+	imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+	imageCreateInfo.imageType = MappingTextureType(desc.dimension);
+	imageCreateInfo.format = MappingTextureFormat(desc.format);
+	imageCreateInfo.extent = { desc.width, desc.height, desc.depth };
+	imageCreateInfo.mipLevels = desc.mipLevels;
+	imageCreateInfo.arrayLayers = desc.arrayLayers;
+	imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+	imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+	imageCreateInfo.usage = MappingTextureUsage(desc.textureUsage);
+	imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+	imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+	VmaAllocationCreateInfo allocInfo{};
+	allocInfo.flags = 0;
+
+	switch (desc.cpuAccess)
+	{
+	case CpuAccess::none:
+		allocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+		break;
+	case CpuAccess::write:
+		allocInfo.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
+		allocInfo.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
+		imageCreateInfo.tiling = VK_IMAGE_TILING_LINEAR;
+		break;
+	case CpuAccess::read:
+		allocInfo.usage = VMA_MEMORY_USAGE_GPU_TO_CPU;
+		allocInfo.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT | VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT;
+		imageCreateInfo.tiling = VK_IMAGE_TILING_LINEAR;
+		break;
+	}
+
+	// 大资源启用独立内存分配
+	VkDeviceSize totalBytes = static_cast<VkDeviceSize>(desc.width) * desc.height * desc.depth * desc.arrayLayers * desc.mipLevels;
+	const VkDeviceSize bigResourceThreshold = 1024ULL * 1024ULL * 32ULL;
+	if (totalBytes > bigResourceThreshold)
+	{
+		allocInfo.flags |= VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT;
+	}
+
+	VkImage image = VK_NULL_HANDLE;
+	VmaAllocation allocation = VK_NULL_HANDLE;
+	VmaAllocationInfo allocResultInfo{};
+
+	VkResult ret = vmaCreateImage(m_allocator, &imageCreateInfo, &allocInfo, &image, &allocation, &allocResultInfo);
+
+	if (ret != VK_SUCCESS)
+	{
+		return TextureHandle(VK_NULL_HANDLE, VK_NULL_HANDLE);
+	}
+	else
+	{
+		return TextureHandle(image, allocation);
+	}
+}
+
+void RenderSystem::destroyTextureHandle(TextureHandle textureHandle)
+{
+	if (textureHandle.isValid())
+	{
+		vmaDestroyImage(m_allocator, textureHandle.image(), textureHandle.allocation());
+	}
+}
+
 VertexShader* RenderSystem::createVertexShader(const char* code, size_t codeSize, const char* entryPoint)
 {
 	return new VertexShader(code, codeSize, entryPoint);

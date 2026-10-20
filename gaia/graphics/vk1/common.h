@@ -61,8 +61,8 @@ struct BarrierCommandSet
 	{
 		for (auto& pbc : m_barrierCommands)
 		{
-			GAIA_ASSERT(0 == pbc.bufferMemoryBarrierCount || pbc.bufferMemoryBarrierCount + pbc.startBufferMemoryBarrier <= bufferBarriers.size());
-			GAIA_ASSERT(0 == pbc.imageMemoryBarrierCount || pbc.imageMemoryBarrierCount + pbc.startImageMemoryBarrier <= imageBarriers.size());
+			GAIA_ASSERT(0 == pbc.m_bufferMemoryBarrierCount || pbc.m_bufferMemoryBarrierCount + pbc.m_startBufferMemoryBarrier <= m_bufferBarriers.size());
+			GAIA_ASSERT(0 == pbc.m_imageMemoryBarrierCount || pbc.m_imageMemoryBarrierCount + pbc.m_startImageMemoryBarrier <= m_imageBarriers.size());
 			vkCmdPipelineBarrier(
 				commandBuffer,
 				pbc.m_srcStageMask,
@@ -118,12 +118,57 @@ struct BeginRenderingCommand
 	VkRenderingAttachmentInfo m_colorAttachmentInfos[gaia_max_color_attment_count];
 	VkRenderingAttachmentInfo m_depthAttachment;
 	VkRenderingAttachmentInfo m_stencilAttachment;
+public:
+	BeginRenderingCommand()
+	{
+		m_renderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
+		m_renderingInfo.pNext = nullptr;
+		m_renderingInfo.flags = 0;
+		m_renderingInfo.renderArea.offset = { 0, 0 };
+		m_renderingInfo.renderArea.extent = { 0, 0 };
+		m_renderingInfo.layerCount = 1;
+		m_renderingInfo.viewMask = 0;
+		m_renderingInfo.colorAttachmentCount = 0;
+		m_renderingInfo.pColorAttachments = m_colorAttachmentInfos;
+		m_renderingInfo.pDepthAttachment = &m_depthAttachment;
+		m_renderingInfo.pStencilAttachment = &m_stencilAttachment;
+		for (uint32_t i = 0; i < gaia_max_color_attment_count; ++i)
+		{
+			m_colorAttachmentInfos[i].sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+			m_colorAttachmentInfos[i].pNext = nullptr;
+			m_colorAttachmentInfos[i].imageView = VK_NULL_HANDLE;
+			m_colorAttachmentInfos[i].imageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+			m_colorAttachmentInfos[i].resolveMode = VK_RESOLVE_MODE_NONE;
+			m_colorAttachmentInfos[i].resolveImageView = VK_NULL_HANDLE;
+			m_colorAttachmentInfos[i].resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+			m_colorAttachmentInfos[i].loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+			m_colorAttachmentInfos[i].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		}
+		m_depthAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+		m_depthAttachment.pNext = nullptr;
+		m_depthAttachment.imageView = VK_NULL_HANDLE;
+		m_depthAttachment.imageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		m_depthAttachment.resolveMode = VK_RESOLVE_MODE_NONE;
+		m_depthAttachment.resolveImageView = VK_NULL_HANDLE;
+		m_depthAttachment.resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		m_depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		m_depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+
+		m_stencilAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+		m_stencilAttachment.pNext = nullptr;
+		m_stencilAttachment.imageView = VK_NULL_HANDLE;
+		m_stencilAttachment.imageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		m_stencilAttachment.resolveMode = VK_RESOLVE_MODE_NONE;
+		m_stencilAttachment.resolveImageView = VK_NULL_HANDLE;
+		m_stencilAttachment.resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		m_stencilAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		m_stencilAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	}
 	void execute(VkCommandBuffer commandBuffer)
 	{
 		vkCmdBeginRendering(commandBuffer, &m_renderingInfo);
 	}
 };
-
 
 
 END_GAIA_VK1

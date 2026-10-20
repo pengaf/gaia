@@ -10,6 +10,7 @@ set(header_files
     ${CMAKE_CURRENT_SOURCE_DIR}/common.h
     ${CMAKE_CURRENT_SOURCE_DIR}/compiled_render_graph.h
     ${CMAKE_CURRENT_SOURCE_DIR}/depth_stencil_view.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/executable_render_graph.h
     ${CMAKE_CURRENT_SOURCE_DIR}/forward_renderer.h
     ${CMAKE_CURRENT_SOURCE_DIR}/frame_graph.h
     ${CMAKE_CURRENT_SOURCE_DIR}/material.h
@@ -54,4 +55,3 @@ gaia_register_source_group("graphics" FILES ${CMAKE_CURRENT_SOURCE_DIR}/CMakeLis
 
 add_subdirectory(hal)
 add_subdirectory(vk1)
-add_subdirectory(rg)

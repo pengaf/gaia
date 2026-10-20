@@ -1,10 +1,10 @@
 #include "render_graph_compiler.h"
 #include "render_graph.h"
 #include "compiled_render_graph.h"
-#include <unordered_map>
-#include <unordered_set>
 #include "pafcore/flat_set.h"
+#include <unordered_map>
 #include <queue>
+#include <algorithm>
 
 BEGIN_GAIA
 
@@ -68,7 +68,6 @@ namespace
 		}
 	};
 
-
 	std::vector<ResourceUsage> CheckResources(
 		RenderGraphCompiler::DiagnosticInfo& diagnosticInfo,
 		const RenderGraph* renderGraph)
@@ -82,8 +81,24 @@ namespace
 			auto* resource = renderGraph->resource(resourceIndex);
 			if (resource->isExternal())
 			{
-				auto* externalResource = static_cast<RenderGraph::ExternalResource*>(resource);
-				auto it = externalResourceMap.find(externalResource->resource());
+				void* realResource = nullptr;
+				if (resource->kind() == RenderGraph::ResourceKind::external_texture)
+				{
+					realResource = static_cast<RenderGraph::ExternalTexture*>(resource)->texture();
+				}
+				else if (resource->kind() == RenderGraph::ResourceKind::external_buffer)
+				{
+					realResource = static_cast<RenderGraph::ExternalBuffer*>(resource)->buffer();
+				}
+				if (nullptr == realResource)
+				{
+					RenderGraphCompiler::DiagnosticItem error;
+					error.code = RenderGraphCompiler::DiagnosticCode::error_external_resource_null;
+					error.resource = resourceIndex;
+					diagnosticInfo.errors.push_back(error);
+					continue;
+				}
+				auto it = externalResourceMap.find(realResource);
 				if (it != externalResourceMap.end())
 				{
 					RenderGraphCompiler::DiagnosticItem error;
@@ -93,7 +108,7 @@ namespace
 				}
 				else
 				{
-					externalResourceMap[externalResource->resource()] = resourceIndex;
+					externalResourceMap[realResource] = resourceIndex;
 				}
 			}
 		}
@@ -107,6 +122,7 @@ namespace
 			std::vector<const RenderGraph::ResourceBinding*> resourceBindings;
 			RenderGraph::Pass* pass = renderGraph->pass(passIndex);
 			pass->collectResourceBindings(resourceBindings);
+			pafcore::FlatSet<uint32_t> checkedResources;
 			for (auto binding : resourceBindings)
 			{
 				uint32_t resource = binding->resource;
@@ -118,6 +134,29 @@ namespace
 					error.pass = passIndex;
 					diagnosticInfo.errors.push_back(error);
 					continue;
+				}
+				if (checkedResources.find(resource) != checkedResources.end())
+				{
+					RenderGraphCompiler::DiagnosticItem error;
+					error.code = RenderGraphCompiler::DiagnosticCode::error_duplicate_resource_in_pass;
+					error.resource = resource;
+					error.pass = passIndex;
+					diagnosticInfo.errors.push_back(error);
+				}
+				else
+				{
+					checkedResources.insert(resource);
+				}
+
+				bool bindingIsTexture = RenderGraph::ResourceBindingIsTexture(binding);
+				bool resourceIsTexture = renderGraph->resource(resource)->isTexture();
+				if (bindingIsTexture != resourceIsTexture)
+				{
+					RenderGraphCompiler::DiagnosticItem error;
+					error.code = RenderGraphCompiler::DiagnosticCode::error_resource_binding_mismatch;
+					error.resource = resource;
+					error.pass = passIndex;
+					diagnosticInfo.errors.push_back(error);
 				}
 				if (binding->isWrite())
 				{
@@ -167,6 +206,119 @@ namespace
 		return resourceUsages;
 	}
 
+	void CheckOutputResources(
+		RenderGraphCompiler::DiagnosticInfo& diagnosticInfo,
+		const RenderGraph* renderGraph,
+		const std::vector<ResourceUsage>& resourceUsages)
+	{
+		uint32_t outputResourceCount = renderGraph->outputResourceCount();
+		if (0 == outputResourceCount)
+		{
+			RenderGraphCompiler::DiagnosticItem error;
+			error.code = RenderGraphCompiler::DiagnosticCode::error_output_resource_not_marked;
+			diagnosticInfo.errors.push_back(error);
+		}
+		for (uint32_t i = 0; i < outputResourceCount; ++i)
+		{
+			uint32_t resource = renderGraph->outputResource(i);
+			if (resource >= renderGraph->resourceCount())
+			{
+				RenderGraphCompiler::DiagnosticItem error;
+				error.code = RenderGraphCompiler::DiagnosticCode::error_output_resource_out_of_range;
+				error.resource = resource;
+				diagnosticInfo.errors.push_back(error);
+			}
+			else
+			{
+				if (!resourceUsages[resource].isWritten)
+				{
+					RenderGraphCompiler::DiagnosticItem error;
+					error.code = RenderGraphCompiler::DiagnosticCode::error_output_resource_not_written;
+					error.resource = resource;
+					diagnosticInfo.errors.push_back(error);
+				}
+			}
+		}
+	}
+
+	void CheckPassContribution(
+		RenderGraphCompiler::DiagnosticInfo& diagnosticInfo,
+		const RenderGraph* renderGraph,
+		const std::vector<ResourceUsage>& resourceUsages)
+	{
+		uint32_t passCount = renderGraph->passCount();
+		uint32_t resourceCount = renderGraph->resourceCount();
+
+		std::vector<std::vector<uint32_t>> writersOf(resourceCount);
+		std::vector<std::vector<uint32_t>> readsOf(passCount);
+
+		for (uint32_t passIndex = 0; passIndex < passCount; ++passIndex)
+		{
+			auto* pass = renderGraph->pass(passIndex);
+			std::vector<const RenderGraph::ResourceBinding*> bindings;
+			pass->collectResourceBindings(bindings);
+
+			for (auto* binding : bindings)
+			{
+				if (binding->isWrite())
+				{
+					writersOf[binding->resource].push_back(passIndex);
+				}
+				if (binding->isRead())
+				{
+					readsOf[passIndex].push_back(binding->resource);
+				}
+			}
+		}
+
+		std::vector<bool> alivePass(passCount, false);
+		std::queue<uint32_t> worklist;
+
+		for (uint32_t outputIndex = 0; outputIndex < renderGraph->outputResourceCount(); ++outputIndex)
+		{
+			uint32_t resource = renderGraph->outputResource(outputIndex);
+			if (resource >= resourceCount)
+			{
+				continue;
+			}
+			for (uint32_t writer : writersOf[resource])
+			{
+				if (!alivePass[writer])
+				{
+					alivePass[writer] = true;
+					worklist.push(writer);
+				}
+			}
+		}
+
+		while (!worklist.empty())
+		{
+			uint32_t pass = worklist.front();
+			worklist.pop();
+
+			for (uint32_t resource : readsOf[pass])
+			{
+				for (uint32_t writer : writersOf[resource])
+				{
+					if (!alivePass[writer])
+					{
+						alivePass[writer] = true;
+						worklist.push(writer);
+					}
+				}
+			}
+		}
+		for (uint32_t passIndex = 0; passIndex < passCount; ++passIndex)
+		{
+			if (!alivePass[passIndex])
+			{
+				RenderGraphCompiler::DiagnosticItem warning;
+				warning.code = RenderGraphCompiler::DiagnosticCode::warning_pass_no_contribution;
+				warning.pass = passIndex;
+				diagnosticInfo.warnings.push_back(warning);
+			}
+		}
+	}
 
 	struct BufferDescHash
 	{
@@ -196,6 +348,54 @@ namespace
 		}
 	};
 
+	struct AliasingSlot
+	{
+		uint32_t firstUsePass = invalid_pass;
+		uint32_t lastUsePass = invalid_pass;
+		std::string name;
+	};
+
+	template<typename Resource_t, typename FreeResourceByDesc_t>
+	void MapResourceToSlot(
+		std::vector<uint32_t>& resourceToSlot,
+		std::vector<AliasingSlot>& slotLifecycles,
+		FreeResourceByDesc_t& freeResourceByDesc,
+		const ResourceUsage& usage,
+		const RenderGraph::Resource* res,
+		uint32_t resourceIndex,
+		CompiledRenderGraph* compiledRenderGraph)
+	{
+		const Resource_t* resource = static_cast<const Resource_t*>(res);
+		auto it = freeResourceByDesc.find(resource->desc());
+		bool allocated = false;
+		if (it != freeResourceByDesc.end())
+		{
+			auto& freeList = it->second;
+			for (auto slotIt = freeList.begin(); slotIt != freeList.end(); ++slotIt)
+			{
+				uint32_t slot = *slotIt;
+				GAIA_ASSERT(slot < slotLifecycles.size());
+				if (usage.firstUsePass > slotLifecycles[slot].lastUsePass)
+				{
+					resourceToSlot[resourceIndex] = slot;
+					slotLifecycles[slot].firstUsePass = std::min(slotLifecycles[slot].firstUsePass, usage.firstUsePass);
+					slotLifecycles[slot].lastUsePass = std::max(slotLifecycles[slot].lastUsePass, usage.lastUsePass);
+					slotLifecycles[slot].name += "," + resource->name();
+					freeList.erase(slotIt);
+					allocated = true;
+					break;
+				}
+			}
+		}
+		if (!allocated)
+		{
+			uint32_t slot = compiledRenderGraph->addResource(resource->name(), resource->desc());
+			GAIA_ASSERT(slot == slotLifecycles.size());
+			resourceToSlot[resourceIndex] = slot;
+			slotLifecycles.push_back({ usage.firstUsePass, usage.lastUsePass, resource->name() });
+		}
+	}
+
 	std::vector<uint32_t> BuildCompiledResources(
 		CompiledRenderGraph* compiledRenderGraph,
 		const RenderGraph* renderGraph,
@@ -204,120 +404,82 @@ namespace
 		uint32_t passCount = renderGraph->passCount();
 		uint32_t resourceCount = renderGraph->resourceCount();
 		std::vector<uint32_t> resourceToSlot(resourceCount, invalid_resource);
-
-		struct AliasingSlot
-		{
-			uint32_t firstUsePass = invalid_pass;
-			uint32_t lastUsePass = invalid_pass;
-			std::string name;
-		};
 		std::vector<AliasingSlot> slotLifecycles;
-
 		std::unordered_map<TextureDesc, std::vector<uint32_t>, TextureDescHash> freeTextureByDesc;
 		std::unordered_map<BufferDesc, std::vector<uint32_t>, BufferDescHash> freeBufferByDesc;
 
+		std::vector<std::vector<uint32_t>> resourcesStartingAt(passCount);
+		std::vector<std::vector<uint32_t>> resourcesEndingAt(passCount);
+		for (uint32_t resourceIndex = 0; resourceIndex < resourceCount; ++resourceIndex)
+		{
+			const auto& usage = resourceUsages[resourceIndex];
+			if (usage.firstUsePass != invalid_pass)
+			{
+				resourcesStartingAt[usage.firstUsePass].push_back(resourceIndex);
+			}
+			if (usage.lastUsePass != invalid_pass)
+			{
+				resourcesEndingAt[usage.lastUsePass].push_back(resourceIndex);
+			}
+		}
+
 		for (uint32_t passIndex = 0; passIndex < passCount; ++passIndex)
 		{
-			auto* pass = renderGraph->pass(passIndex);
-			for (uint32_t resource = 0; resource < resourceCount; ++resource)
+			for (uint32_t resourceIndex : resourcesStartingAt[passIndex])
 			{
-				const auto& usage = resourceUsages[resource];
-				if (usage.firstUsePass != passIndex)
+				const auto& usage = resourceUsages[resourceIndex];
+				GAIA_ASSERT(usage.firstUsePass == passIndex);
+				if (resourceToSlot[resourceIndex] != invalid_resource)
 				{
 					continue;
 				}
-				if (resourceToSlot[resource] != invalid_resource)
+				auto* resource = renderGraph->resource(resourceIndex);
+				if (resource->isExternal())
 				{
-					continue;
-				}
-				auto* info = renderGraph->resource(resource);
-				if (info->isExternal())
-				{
-					uint32_t slot = compiledRenderGraph->cloneExternalResource(static_cast<RenderGraph::ExternalResource*>(info));
-					resourceToSlot[resource] = slot;
-					slotLifecycles.push_back({ passIndex, usage.lastUsePass, info->name() });
+					uint32_t slot;
+					if (resource->kind() == RenderGraph::ResourceKind::external_texture)
+					{
+						slot = compiledRenderGraph->cloneExternalTexture(static_cast<RenderGraph::ExternalTexture*>(resource));
+					}
+					else
+					{
+						GAIA_ASSERT(resource->kind() == RenderGraph::ResourceKind::external_buffer);
+						slot = compiledRenderGraph->cloneExternalBuffer(static_cast<RenderGraph::ExternalBuffer*>(resource));
+					}
+					GAIA_ASSERT(slot == slotLifecycles.size());
+					resourceToSlot[resourceIndex] = slot;
+					slotLifecycles.push_back({ passIndex, usage.lastUsePass, resource->name() });
 					continue;
 				}
 
-				if (info->kind() == RenderGraph::ResourceKind::texture)
+				if (resource->kind() == RenderGraph::ResourceKind::texture)
 				{
-					auto* tex = static_cast<const RenderGraph::Texture*>(info);
-					auto it = freeTextureByDesc.find(tex->desc());
-					bool allocated = false;
-					if (it != freeTextureByDesc.end())
-					{
-						auto& freeList = it->second;
-						for (auto slotIt = freeList.begin(); slotIt != freeList.end(); ++slotIt)
-						{
-							uint32_t slot = *slotIt;
-							if (usage.firstUsePass > slotLifecycles[slot].lastUsePass)
-							{
-								resourceToSlot[resource] = slot;
-								slotLifecycles[slot].firstUsePass = std::min(slotLifecycles[slot].firstUsePass, usage.firstUsePass);
-								slotLifecycles[slot].lastUsePass = std::max(slotLifecycles[slot].lastUsePass, usage.lastUsePass);
-								slotLifecycles[slot].name += "," + info->name();
-								freeList.erase(slotIt);
-								allocated = true;
-								break;
-							}
-						}
-					}
-					if (!allocated)
-					{
-						uint32_t slot = compiledRenderGraph->addTexture(tex->name(), tex->desc());
-						resourceToSlot[resource] = slot;
-						slotLifecycles.push_back({ usage.firstUsePass, usage.lastUsePass, info->name() });
-					}
+					MapResourceToSlot<RenderGraph::Texture>(resourceToSlot, slotLifecycles, freeTextureByDesc, usage, resource, resourceIndex, compiledRenderGraph);
 				}
-				else if (info->kind() == RenderGraph::ResourceKind::buffer)
+				else if (resource->kind() == RenderGraph::ResourceKind::buffer)
 				{
-					auto* buf = static_cast<const RenderGraph::Buffer*>(info);
-					auto it = freeBufferByDesc.find(buf->desc());
-					bool allocated = false;
-					if (it != freeBufferByDesc.end())
-					{
-						auto& freeList = it->second;
-						for (auto slotIt = freeList.begin(); slotIt != freeList.end(); ++slotIt)
-						{
-							uint32_t slot = *slotIt;
-							if (usage.firstUsePass > slotLifecycles[slot].lastUsePass)
-							{
-								resourceToSlot[resource] = slot;
-								slotLifecycles[slot].firstUsePass = std::min(slotLifecycles[slot].firstUsePass, usage.firstUsePass);
-								slotLifecycles[slot].lastUsePass = std::max(slotLifecycles[slot].lastUsePass, usage.lastUsePass);
-								slotLifecycles[slot].name += "," + info->name();
-								freeList.erase(slotIt);
-								allocated = true;
-								break;
-							}
-						}
-					}
-					if (!allocated)
-					{
-						uint32_t slot = compiledRenderGraph->addBuffer(buf->name(), buf->desc());
-						resourceToSlot[resource] = slot;
-						slotLifecycles.push_back({ usage.firstUsePass, usage.lastUsePass, info->name() });
-					}
+					MapResourceToSlot<RenderGraph::Buffer>(resourceToSlot, slotLifecycles, freeBufferByDesc, usage, resource, resourceIndex, compiledRenderGraph);
 				}
 			}
-			for (uint32_t resource = 0; resource < resourceCount; ++resource)
+			for (uint32_t resourceIndex : resourcesEndingAt[passIndex])
 			{
-				const auto& usage = resourceUsages[resource];
-				if (usage.lastUsePass != passIndex) continue;
-				if (resourceToSlot[resource] == invalid_resource) continue;
-
-				uint32_t slot = resourceToSlot[resource];
-				auto* info = renderGraph->resource(resource);
-				compiledRenderGraph->resource(slot)->name() = slotLifecycles[slot].name;
-
-				if (info->kind() == RenderGraph::ResourceKind::texture)
+				if (resourceToSlot[resourceIndex] == invalid_resource)
 				{
-					auto* tex = static_cast<const RenderGraph::Texture*>(info);
+					continue;
+				}
+				uint32_t slot = resourceToSlot[resourceIndex];
+				GAIA_ASSERT(slot < slotLifecycles.size());
+				auto* resource = renderGraph->resource(resourceIndex);
+				compiledRenderGraph->resource(slot)->name(slotLifecycles[slot].name);
+
+				if (resource->kind() == RenderGraph::ResourceKind::texture)
+				{
+					auto* tex = static_cast<const RenderGraph::Texture*>(resource);
 					freeTextureByDesc[tex->desc()].push_back(slot);
 				}
-				else if (info->kind() == RenderGraph::ResourceKind::buffer)
+				else if (resource->kind() == RenderGraph::ResourceKind::buffer)
 				{
-					auto* buf = static_cast<const RenderGraph::Buffer*>(info);
+					auto* buf = static_cast<const RenderGraph::Buffer*>(resource);
 					freeBufferByDesc[buf->desc()].push_back(slot);
 				}
 			}
@@ -325,149 +487,40 @@ namespace
 		return resourceToSlot;
 	}
 
+
 	void BuildCompiledPasses(
 		CompiledRenderGraph* compiledRenderGraph,
 		const RenderGraph* renderGraph,
-		const std::vector<uint32_t>& executionOrder,
 		const std::vector<uint32_t>& resourceToSlot)
 	{
-		uint32_t passCount = (uint32_t)executionOrder.size();
+		uint32_t passCount = renderGraph->passCount();
 
-		for (uint32_t order = 0; order < passCount; ++order)
+		for (uint32_t passIndex = 0; passIndex < passCount; ++passIndex)
 		{
-			uint32_t passIndex = executionOrder[order];
 			auto* srcPass = renderGraph->pass(passIndex);
+			auto* dstPass = compiledRenderGraph->addPassFromSource(srcPass);
+			dstPass->buildResourceBindings(srcPass, resourceToSlot);
+		}
 
-			switch (srcPass->kind())
-			{
-			case RenderPassKind::scene_pass:
-			{
-				auto* srcScenePass = static_cast<RenderGraph::ScenePass*>(srcPass);
-				auto* dstScenePass = compiledRenderGraph->addScenePass(srcScenePass->name());
+		uint32_t resourceCount = compiledRenderGraph->resourceCount();
 
-				for (auto& rtv : srcScenePass->rtvs())
-				{
-					dstScenePass->addRTV(resourceToSlot[rtv.resource], rtv.usageDesc);
-				}
-				if (srcScenePass->dsv().resource != invalid_resource)
-				{
-					dstScenePass->setDSV(resourceToSlot[srcScenePass->dsv().resource], srcScenePass->dsv().usageDesc);
-				}
-				break;
-			}
-			case RenderPassKind::image_pass:
-			{
-				auto* srcImagePass = static_cast<RenderGraph::ImagePass*>(srcPass);
-				auto* dstImagePass = compiledRenderGraph->addImagePass(srcImagePass->name());
+		std::vector<const CompiledRenderGraph::ResourceBinding*> lastBinding(resourceCount, nullptr);
 
-				for (auto& srv : srcImagePass->srvs())
-				{
-					dstImagePass->addSRV(resourceToSlot[srv.resource], srv.usageDesc);
-				}
-				for (auto& rtv : srcImagePass->rtvs())
-				{
-					dstImagePass->addRTV(resourceToSlot[rtv.resource], rtv.usageDesc);
-				}
-				dstImagePass->pipeline(srcImagePass->pipeline());
-				break;
-			}
-			case RenderPassKind::compute_pass:
-			{
-				auto* srcComputePass = static_cast<RenderGraph::ComputePass*>(srcPass);
-				auto* dstComputePass = compiledRenderGraph->addComputePass(srcComputePass->name());
+		for (uint32_t passIndex = 0; passIndex < passCount; ++passIndex)
+		{
+			auto* pass = compiledRenderGraph->pass(passIndex);
+			std::vector<const CompiledRenderGraph::ResourceBinding*> bindings;
+			pass->collectResourceBindings(bindings);
 
-				for (auto& srv : srcComputePass->srvs())
-				{
-					dstComputePass->addSRV(resourceToSlot[srv.resource], srv.usageDesc);
-				}
-				for (auto& uav : srcComputePass->uavs())
-				{
-					dstComputePass->addUAV(resourceToSlot[uav.resource], uav.usageDesc);
-				}
-				dstComputePass->pipeline(srcComputePass->pipeline());
-				break;
-			}
-			case RenderPassKind::ray_tracing_pass:
+			for (auto* binding : bindings)
 			{
-				auto* srcRayTracingPass = static_cast<RenderGraph::RayTracingPass*>(srcPass);
-				auto* dstRayTracingPass = compiledRenderGraph->addRayTracingPass(srcRayTracingPass->name());
-
-				for (auto& srv : srcRayTracingPass->srvs())
-				{
-					dstRayTracingPass->addSRV(resourceToSlot[srv.resource], srv.usageDesc);
-				}
-				for (auto& uav : srcRayTracingPass->uavs())
-				{
-					dstRayTracingPass->addUAV(resourceToSlot[uav.resource], uav.usageDesc);
-				}
-				dstRayTracingPass->pipeline(srcRayTracingPass->pipeline());
-				break;
-			}
-			default:
-				GAIA_ASSERT(false && "Unknown pass kind");
-				break;
+				uint32_t resource = binding->resource;
+				GAIA_ASSERT(resource < resourceCount);
+				pass->addTransition(lastBinding[resource], binding);
+				lastBinding[resource] = binding;
 			}
 		}
 	}
-
-	void BuildCompiledBarriers(
-		CompiledRenderGraph* output,
-		const RenderGraph* input,
-		const std::vector<uint32_t>& executionOrder,
-		const PassToResource& passToResource,
-		const std::vector<uint32_t>& resourceToSlot)
-	{
-		uint32_t passCount = (uint32_t)executionOrder.size();
-		uint32_t resourceCount = input->resourceCount();
-		uint32_t dstResourceCount = output->resourceCount();
-
-		// 每个 slot 的当前状态
-		std::vector<ResourceState> currentState(output->resourceCount(), ResourceState::undefined);
-
-		for (uint32_t slot = 0; slot < dstResourceCount; ++slot)
-		{
-			auto* compiledResource = output->resource(slot);
-			if (compiledResource->isExternal())
-			{
-				auto* ext = static_cast<const CompiledRenderGraph::ExternalResource*>(compiledResource);
-				currentState[slot] = ext->oldState();
-			}
-		}
-
-		for (uint32_t order = 0; order < passCount; ++order)
-		{
-			uint32_t passIndex = executionOrder[order];
-			auto* outputPass = output->pass(order);
-
-			// 读取：需要 shader_resource
-			for (uint32_t resource : passToResource.items[passIndex].readResources)
-			{
-				uint32_t slot = resourceToSlot[resource];
-				if (currentState[slot] != ResourceState::shader_resource)
-				{
-					outputPass->barriers().push_back({
-						slot, currentState[slot], ResourceState::shader_resource
-						});
-					currentState[slot] = ResourceState::shader_resource;
-				}
-			}
-
-			// 写入：需要目标状态
-			for (uint32_t resource : passToResource.items[passIndex].writeResources)
-			{
-				uint32_t slot = resourceToSlot[resource];
-				ResourceState target = GetTargetState(input->resource(resource), outputPass);
-				if (currentState[slot] != target)
-				{
-					outputPass->barriers().push_back({
-						slot, currentState[slot], target
-						});
-					currentState[slot] = target;
-				}
-			}
-		}
-	}
-
 }
 
 
@@ -476,10 +529,9 @@ RenderGraphCompiler::DiagnosticInfo RenderGraphCompiler::compile(CompiledRenderG
 	RenderGraphCompiler::DiagnosticInfo diagnosticInfo;
 
 	compiledRenderGraph->reset();
-	uint32_t passCount = renderGraph->passCount();
-	uint32_t resourceCount = renderGraph->resourceCount();
 
 	std::vector<ResourceUsage> resourceUsages = CheckResources(diagnosticInfo, renderGraph);
+	CheckOutputResources(diagnosticInfo, renderGraph, resourceUsages);
 
 	if (!diagnosticInfo.errors.empty())
 	{
@@ -488,7 +540,7 @@ RenderGraphCompiler::DiagnosticInfo RenderGraphCompiler::compile(CompiledRenderG
 
 	std::vector<uint32_t> resourceToSlot = BuildCompiledResources(compiledRenderGraph, renderGraph, resourceUsages);
 
-	BuildCompiledPasses(compiledRenderGraph, renderGraph, executionOrder, resourceToSlot);
+	BuildCompiledPasses(compiledRenderGraph, renderGraph, resourceToSlot);
 
 	return diagnosticInfo;
 }

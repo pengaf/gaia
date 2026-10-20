@@ -29,6 +29,41 @@ struct RenderSystemConfig
 	bool vsync{ false };
 };
 
+class BufferHandle
+{
+public:
+	BufferHandle(VkBuffer buffer, VmaAllocation allocation) :
+		m_buffer(buffer),
+		m_allocation(allocation)
+	{
+	}
+	bool isValid() const
+	{
+		return m_buffer != VK_NULL_HANDLE;
+	}
+public:
+	GAIA_ARG_RO(VkBuffer, buffer, VK_NULL_HANDLE);
+	GAIA_ARG_RO(VmaAllocation, allocation, VK_NULL_HANDLE);
+};
+
+class TextureHandle
+{
+public:
+	TextureHandle(VkImage image, VmaAllocation allocation) :
+		m_image(image),
+		m_allocation(allocation)
+	{
+	}
+	bool isValid() const
+	{
+		return m_image != VK_NULL_HANDLE;
+	}
+public:
+	GAIA_ARG_RO(VkImage, image, VK_NULL_HANDLE);
+	GAIA_ARG_RO(VmaAllocation, allocation, VK_NULL_HANDLE);
+};
+
+
 class RenderSystem
 {
 public:
@@ -42,8 +77,13 @@ public:
 	RenderSystem& operator=(RenderSystem&&) = default;
 public:
 	bool initialize(const RenderSystemConfig& config);
-	Buffer* createBuffer(const BufferDesc& desc);
-	void writeBuffer(Buffer* buffer, uint64_t offset, uint64_t size, const void* data);
+	BufferHandle createBufferHandle(const BufferDesc& desc);
+	void destroyBufferHandle(BufferHandle bufferHandle);
+	TextureHandle createTextureHandle(const TextureDesc& desc);
+	void destroyTextureHandle(TextureHandle textureHandle);
+
+	//Buffer* createBuffer(const BufferDesc& desc);
+	void writeBuffer(BufferHandle buffer, uint64_t offset, uint64_t size, const void* data);
 	VertexShader* createVertexShader(const char* code, size_t codeSize, const char* entryPoint);
 
 	//FragmentShader* createFragmentShader(const char* code, size_t codeSize, const char* entryPoint);
@@ -73,7 +113,14 @@ public:
 
 	RenderWindow* createRenderWindow(void* platformHandle);
 public:
-	VmaAllocator allocator() const;
+	VkDevice device() const
+	{
+		return m_device;
+	}
+	VmaAllocator allocator() const
+	{
+		return m_allocator;
+	}
 	void render(VertexShaderElement* graphicsElements);
 private:
 	struct RecordThread

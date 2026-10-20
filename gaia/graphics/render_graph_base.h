@@ -2,6 +2,7 @@
 
 #include "utility.h"
 #include "common.h"
+#include "hal/resource.h"
 #include <vector>
 #include <string>
 #include <memory>
@@ -11,8 +12,6 @@ BEGIN_GAIA
 class GraphicsPipelineState;
 class ComputePipelineState;
 class RayTracingPipelineState;
-class Texture;
-class Buffer;
 
 class RenderGraphBase
 {
@@ -37,9 +36,13 @@ public:
 		{
 			return m_kind == ResourceKind::external_texture || m_kind == ResourceKind::external_buffer;
 		}
+		bool isTexture() const
+		{
+			return m_kind == ResourceKind::texture || m_kind == ResourceKind::external_texture;
+		}
 	public:
 		GAIA_ARG_RO(ResourceKind, kind);
-		GAIA_ARG_RO(std::string, name);
+		GAIA_ARG(std::string, name);
 	};
 
 	class Texture : public Resource
@@ -58,25 +61,34 @@ public:
 		GAIA_ARG_RO(BufferDesc, desc);
 	};
 
-	class ExternalResource : public Resource
+	class ExternalTexture : public Resource
 	{
 	public:
-		ExternalResource(std::string_view name, Texture* texture, ResourceState oldState) : Resource(ResourceKind::external_texture, name), m_texture(texture), m_oldState(oldState) {}
-		ExternalResource(std::string_view name, Buffer* buffer, ResourceState oldState) : Resource(ResourceKind::external_buffer, name), m_buffer(buffer), m_oldState(oldState) {}
-	public:
-		void* resource() const
-		{
-			return m_resource;
-		}
+		ExternalTexture(std::string_view name, gaia::Texture* texture, ResourceState oldState) : Resource(ResourceKind::external_texture, name), m_texture(texture), m_oldState(oldState) {}
 	public:
 		GAIA_ARG_RO(ResourceState, oldState);
-	private:
-		union
+	public:
+		gaia::Texture* texture() const
 		{
-			Texture* m_texture;
-			Buffer* m_buffer;
-			void* m_resource;
-		};
+			return m_texture.get();
+		}
+	private:
+		RefPtr<gaia::Texture> m_texture;
+	};
+
+	class ExternalBuffer : public Resource
+	{
+	public:
+		ExternalBuffer(std::string_view name, gaia::Buffer* buffer, ResourceState oldState) : Resource(ResourceKind::external_buffer, name), m_buffer(buffer), m_oldState(oldState) {}
+	public:
+		GAIA_ARG_RO(ResourceState, oldState);
+	public:
+		gaia::Buffer* buffer() const
+		{
+			return m_buffer.get();
+		}
+	private:
+		RefPtr<gaia::Buffer> m_buffer;
 	};
 
 public:
@@ -147,35 +159,75 @@ public:
 	using DSV = ResourceBinding_t<ResourceBindingKind::depth_stencil, DepthStencilViewDesc>;
 	using SRV = ResourceBinding_t<ResourceBindingKind::shader_resource, ShaderResourceViewDesc>;
 	using UAV = ResourceBinding_t<ResourceBindingKind::unordered_access, UnorderedAccessViewDesc>;
+	using CopySrc = ResourceBinding_t<ResourceBindingKind::copy_src, ResourceCopyDesc>;
+	using CopyDst = ResourceBinding_t<ResourceBindingKind::copy_dst, ResourceCopyDesc>;
 
-	struct Barrier
+	static bool ResourceBindingIsTexture(const ResourceBinding* binding)
 	{
-		uint32_t resource;
-		ResourceBinding* oldUsage;
-		ResourceBinding* newUsage;
+		switch (binding->usageKind)
+		{
+		case ResourceBindingKind::render_target:
+		case ResourceBindingKind::depth_stencil:
+			return true;
+		case ResourceBindingKind::shader_resource:
+			return static_cast<const SRV*>(binding)->usageDesc.resourceKind == ShaderResourceKind::texture;
+		case ResourceBindingKind::unordered_access:
+			return static_cast<const UAV*>(binding)->usageDesc.resourceKind == ShaderResourceKind::texture;
+		case ResourceBindingKind::copy_src:
+			return static_cast<const CopySrc*>(binding)->usageDesc.sideKind == ResourceCopySideKind::texture;
+		case ResourceBindingKind::copy_dst:
+			return static_cast<const CopyDst*>(binding)->usageDesc.sideKind == ResourceCopySideKind::texture;
+		case ResourceBindingKind::resolve_src:
+		case ResourceBindingKind::resolve_dst:
+		case ResourceBindingKind::blit_src:
+		case ResourceBindingKind::blit_dst:
+		case ResourceBindingKind::mipmap_src:
+		case ResourceBindingKind::mipmap_dst:
+			return true;
+		default:
+			GAIA_ASSERT(false);
+			return false;
+		}
+	}
+
+	struct ResourceTransition
+	{
+		const ResourceBinding* oldBinding;
+		const ResourceBinding* newBinding;
 	};
 
-	template<bool t_compiled>
-	class PassBarriers
-	{};
 
-	template<>
-	class PassBarriers<true>
+	class PassBase
 	{
 	public:
-		GAIA_ARG_RO(std::vector<Barrier>, barriers);
-	};
-
-	template<bool t_compiled>
-	class Pass : public PassBarriers<t_compiled>
-	{
-	public:
-		Pass(std::string_view name, RenderPassKind kind) : m_name(name), m_kind(kind) {}
-		virtual ~Pass() = default;
+		PassBase(std::string_view name, RenderPassKind kind) : m_name(name), m_kind(kind) {}
+		virtual ~PassBase() = default;
 		virtual void collectResourceBindings(std::vector<const ResourceBinding*>& resourceBindings) const = 0;
 	public:
 		GAIA_ARG_RO(RenderPassKind, kind);
 		GAIA_ARG_RO(std::string, name);
+	};
+
+	template<bool t_compiled>
+	class Pass : public PassBase
+	{
+	public:
+		using PassBase::PassBase;
+	};
+
+	template<>
+	class Pass<true> : public PassBase
+	{
+	public:
+		using PassBase::PassBase;
+		virtual void buildResourceBindings(const Pass<false>* srcPass, const std::vector<uint32_t>& resourceMap) = 0;
+	public:
+		void addTransition(const ResourceBinding* oldBinding, const ResourceBinding* newBinding)
+		{
+			m_transitions.push_back({ oldBinding, newBinding });
+		}
+	public:
+		GAIA_ARG_RO(std::vector<ResourceTransition>, transitions);
 	};
 
 	//template<bool t_compiled>
@@ -216,7 +268,7 @@ public:
 		{
 			m_dsv = { resource, desc };
 		}
-		virtual void collectResourceBindings(std::vector<const ResourceBinding*>& resourceBindings) const override
+		void collectResourceBindings(std::vector<const ResourceBinding*>& resourceBindings) const
 		{
 			for (auto& rtv : m_rtvs)
 			{
@@ -225,6 +277,31 @@ public:
 			if (invalid_resource != m_dsv.resource)
 			{
 				resourceBindings.push_back(&m_dsv);
+			}
+		}
+		void buildResourceBindings(const Pass<false>* srcPass, const std::vector<uint32_t>& resourceMap)
+		{
+			if constexpr (t_compiled)
+			{
+				GAIA_ASSERT(srcPass->kind() == RenderPassKind::scene_pass);
+				GAIA_ASSERT(m_rtvs.empty());
+				GAIA_ASSERT(invalid_resource == m_dsv.resource);
+				auto* srcScenePass = static_cast<const ScenePass<false>*>(srcPass);
+				for (auto& rtv : srcScenePass->rtvs())
+				{
+					GAIA_ASSERT(rtv.resource < resourceMap.size());
+					addRTV(resourceMap[rtv.resource], rtv.usageDesc);
+				}
+				const DSV& dsv = srcScenePass->dsv();
+				if (invalid_resource != dsv.resource)
+				{
+					GAIA_ASSERT(dsv.resource < resourceMap.size());
+					setDSV(resourceMap[dsv.resource], dsv.usageDesc);
+				}
+			}
+			else
+			{
+				static_assert(t_compiled);
 			}
 		}
 	public:
@@ -246,7 +323,7 @@ public:
 		{
 			m_rtvs.push_back({ resource, desc });
 		}
-		virtual void collectResourceBindings(std::vector<const ResourceBinding*>& resourceBindings) const override
+		void collectResourceBindings(std::vector<const ResourceBinding*>& resourceBindings) const
 		{
 			for (auto& srv : m_srvs)
 			{
@@ -255,6 +332,30 @@ public:
 			for (auto& rtv : m_rtvs)
 			{
 				resourceBindings.push_back(&rtv);
+			}
+		}
+		void buildResourceBindings(const Pass<false>* srcPass, const std::vector<uint32_t>& resourceMap)
+		{
+			if constexpr (t_compiled)
+			{
+				GAIA_ASSERT(srcPass->kind() == RenderPassKind::image_pass);
+				GAIA_ASSERT(m_srvs.empty());
+				GAIA_ASSERT(m_rtvs.empty());
+				auto* srcImagePass = static_cast<const ImagePass<false>*>(srcPass);
+				for (auto& srv : srcImagePass->srvs())
+				{
+					GAIA_ASSERT(srv.resource < resourceMap.size());
+					addSRV(resourceMap[srv.resource], srv.usageDesc);
+				}
+				for (auto& rtv : srcImagePass->rtvs())
+				{
+					GAIA_ASSERT(rtv.resource < resourceMap.size());
+					addRTV(resourceMap[rtv.resource], rtv.usageDesc);
+				}
+			}
+			else
+			{
+				static_assert(t_compiled);
 			}
 		}
 	public:
@@ -277,7 +378,7 @@ public:
 		{
 			m_uavs.push_back({ resource, desc });
 		}
-		virtual void collectResourceBindings(std::vector<const ResourceBinding*>& resourceBindings) const override
+		void collectResourceBindings(std::vector<const ResourceBinding*>& resourceBindings) const
 		{
 			for (auto& srv : m_srvs)
 			{
@@ -286,6 +387,30 @@ public:
 			for (auto& uav : m_uavs)
 			{
 				resourceBindings.push_back(&uav);
+			}
+		}
+		void buildResourceBindings(const Pass<false>* srcPass, const std::vector<uint32_t>& resourceMap)
+		{
+			if constexpr (t_compiled)
+			{
+				GAIA_ASSERT(srcPass->kind() == RenderPassKind::compute_pass);
+				GAIA_ASSERT(m_srvs.empty());
+				GAIA_ASSERT(m_uavs.empty());
+				auto* srcComputePass = static_cast<const ComputePass<false>*>(srcPass);
+				for (auto& srv : srcComputePass->srvs())
+				{
+					GAIA_ASSERT(srv.resource < resourceMap.size());
+					addSRV(resourceMap[srv.resource], srv.usageDesc);
+				}
+				for (auto& uav : srcComputePass->uavs())
+				{
+					GAIA_ASSERT(uav.resource < resourceMap.size());
+					addUAV(resourceMap[uav.resource], uav.usageDesc);
+				}
+			}
+			else
+			{
+				static_assert(t_compiled);
 			}
 		}
 	public:
@@ -308,7 +433,7 @@ public:
 		{
 			m_uavs.push_back({ resource, desc });
 		}
-		virtual void collectResourceBindings(std::vector<const ResourceBinding*>& resourceBindings) const override
+		void collectResourceBindings(std::vector<const ResourceBinding*>& resourceBindings) const
 		{
 			for (auto& srv : m_srvs)
 			{
@@ -317,6 +442,30 @@ public:
 			for (auto& uav : m_uavs)
 			{
 				resourceBindings.push_back(&uav);
+			}
+		}
+		void buildResourceBindings(const Pass<false>* srcPass, const std::vector<uint32_t>& resourceMap)
+		{
+			if constexpr (t_compiled)
+			{
+				GAIA_ASSERT(srcPass->kind() == RenderPassKind::ray_tracing_pass);
+				GAIA_ASSERT(m_srvs.empty());
+				GAIA_ASSERT(m_uavs.empty());
+				auto* srcRayTracingPass = static_cast<const RayTracingPass<false>*>(srcPass);
+				for (auto& srv : srcRayTracingPass->srvs())
+				{
+					GAIA_ASSERT(srv.resource < resourceMap.size());
+					addSRV(resourceMap[srv.resource], srv.usageDesc);
+				}
+				for (auto& uav : srcRayTracingPass->uavs())
+				{
+					GAIA_ASSERT(uav.resource < resourceMap.size());
+					addUAV(resourceMap[uav.resource], uav.usageDesc);
+				}
+			}
+			else
+			{
+				static_assert(t_compiled);
 			}
 		}
 	public:

@@ -6,7 +6,9 @@
 
 BEGIN_GAIA_VK1
 
-VkFormat MappingTextureFormat(TextureFormat format);
+VkBufferUsageFlags MappingBufferUsage(BufferUsage bufferUsage);
 VkImageUsageFlags MappingTextureUsage(TextureUsage usage);
+VkFormat MappingTextureFormat(TextureFormat format);
+VkImageType MappingTextureType(TextureDimension dim);
 
 END_GAIA_VK1

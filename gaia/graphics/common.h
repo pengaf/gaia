@@ -454,9 +454,40 @@ struct UnorderedAccessViewDesc
     };
 };
 
+enum class ResourceCopySideKind : uint8_t
+{
+    texture,
+    buffer,
+};
+
+struct TextureCopyRegion
+{
+    uint32_t mipLevel;
+    uint32_t baseArrayLayer;
+    uint32_t arrayLayerCount;
+    uint32_t x, y, z;
+    uint32_t width, height, depth;
+    uint64_t bufferOffset;
+    uint32_t bufferRowPitch;
+    uint32_t bufferImageHeight;
+};
+
+struct BufferCopyRegion
+{
+    uint64_t offset;
+    uint64_t size;
+};
+
 struct ResourceCopyDesc
 {
+    ResourceCopySideKind sideKind;
+    union
+    {
+        TextureCopyRegion texture;
+        BufferCopyRegion buffer;
+    };
 };
+
 
 struct SamplerState 
 {

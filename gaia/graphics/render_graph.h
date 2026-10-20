@@ -15,8 +15,8 @@ public:
 public:
 	uint32_t addTexture(std::string_view name, const TextureDesc& desc);
 	uint32_t addBuffer(std::string_view name, const BufferDesc& desc);
-	uint32_t addExternalTexture(std::string_view name, Texture* texture, ResourceState oldState);
-	uint32_t addExternalBuffer(std::string_view name, Buffer* buffer, ResourceState oldState);
+	uint32_t addExternalTexture(std::string_view name, gaia::Texture* texture, ResourceState oldState);
+	uint32_t addExternalBuffer(std::string_view name, gaia::Buffer* buffer, ResourceState oldState);
 	ScenePass* addScenePass(std::string_view name);
 	ImagePass* addImagePass(std::string_view name);
 	ComputePass* addComputePass(std::string_view name);
@@ -49,15 +49,24 @@ public:
 	{
 		return m_outputs.find(resource) != m_outputs.end();
 	}
-public:
+	uint32_t outputResourceCount() const
+	{
+		return (uint32_t)m_outputs.size();
+	}
+	uint32_t outputResource(uint32_t index) const
+	{
+		GAIA_ASSERT(index < m_outputs.size());
+		return m_outputs[index];
+	}
+protected:
 	std::vector<std::unique_ptr<Resource>> m_resources;
 	std::vector<std::unique_ptr<Pass>> m_passes;
 	pafcore::FlatSet<uint32_t> m_outputs;
 private:
 	template<typename T>
-	T* addPass(std::string_view name);
+	T* addPass_(std::string_view name);
 	template<typename T, class...Args>
-	uint32_t addResource(Args&&... args);
+	uint32_t addResource_(Args&&... args);
 };
 
 END_GAIA

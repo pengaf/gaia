@@ -2,8 +2,96 @@
 
 BEGIN_GAIA_VK1
 
+VkBufferUsageFlags MappingBufferUsage(BufferUsage bufferUsage)
+{
+    VkBufferUsageFlags result = 0;
+    if ((bufferUsage & BufferUsage::uniform) != BufferUsage(0))
+    {
+        result |= VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+    }
+    if ((bufferUsage & BufferUsage::storage) != BufferUsage(0))
+    {
+        result |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+    }
+    if ((bufferUsage & BufferUsage::index) != BufferUsage(0))
+    {
+        result |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+    }
+    if ((bufferUsage & BufferUsage::vertex) != BufferUsage(0))
+    {
+        result |= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+    }
+    if ((bufferUsage & BufferUsage::indirect) != BufferUsage(0))
+    {
+        result |= VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
+    }
+    if ((bufferUsage & BufferUsage::copy_src) != BufferUsage(0))
+    {
+        result |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+    }
+    if ((bufferUsage & BufferUsage::copy_dst) != BufferUsage(0))
+    {
+        result |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+    }
+    if ((bufferUsage & BufferUsage::query_resolve) != BufferUsage(0))
+    {
+        result |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+    }
+    return result;
+};
+
+
+VkImageUsageFlags MappingTextureUsage(TextureUsage textureUsage)
+{
+    VkImageUsageFlags flags = 0;
+
+    if ((textureUsage & TextureUsage::copy_src) != TextureUsage(0))
+    {
+        flags |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+    }
+
+    if ((textureUsage & TextureUsage::copy_dst) != TextureUsage(0))
+    {
+        flags |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    }
+
+    if ((textureUsage & TextureUsage::shader_resource) != TextureUsage(0))
+    {
+        flags |= VK_IMAGE_USAGE_SAMPLED_BIT;
+    }
+
+    if ((textureUsage & TextureUsage::unordered_access) != TextureUsage(0))
+    {
+        flags |= VK_IMAGE_USAGE_STORAGE_BIT;
+    }
+
+    if ((textureUsage & TextureUsage::render_target) != TextureUsage(0))
+    {
+        flags |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    }
+
+    if ((textureUsage & TextureUsage::depth_stencil) != TextureUsage(0))
+    {
+        flags |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+    }
+
+    if ((textureUsage & TextureUsage::input) != TextureUsage(0))
+    {
+        flags |= VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
+    }
+
+    if ((textureUsage & TextureUsage::transient) != TextureUsage(0))
+    {
+        flags |= VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT;
+    }
+
+    return flags;
+}
+
+
 static VkFormat s_formats[] =
 {
+    VK_FORMAT_UNDEFINED,
     // 8 BIT FORMATS
     VK_FORMAT_R8_UNORM,
     VK_FORMAT_R8_SNORM,
@@ -120,7 +208,6 @@ static VkFormat s_formats[] =
 VkFormat MappingTextureFormat(TextureFormat format)
 {
     static_assert(sizeof(s_formats) / sizeof(s_formats[0]) == uint32_t(TextureFormat::count));
-
     if (uint32_t(format) < sizeof(s_formats) / sizeof(s_formats[0]))
     {
         return s_formats[uint32_t(format)];
@@ -128,51 +215,19 @@ VkFormat MappingTextureFormat(TextureFormat format)
     return VK_FORMAT_UNDEFINED;
 }
 
-VkImageUsageFlags MappingTextureUsage(TextureUsage textureUsage)
+VkImageType MappingTextureType(TextureDimension dim)
 {
-    VkImageUsageFlags flags = 0;
-
-    if ((textureUsage & TextureUsage::copy_src) != TextureUsage(0))
+    switch (dim)
     {
-        flags |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+    case TextureDimension::tex1d:
+        return VK_IMAGE_TYPE_1D;
+    case TextureDimension::tex2d:
+        return VK_IMAGE_TYPE_2D;
+    case TextureDimension::tex3d:
+        return VK_IMAGE_TYPE_3D;
+    default:
+        return VK_IMAGE_TYPE_2D;
     }
-
-    if ((textureUsage & TextureUsage::copy_dst) != TextureUsage(0))
-    {
-        flags |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-    }
-
-    if ((textureUsage & TextureUsage::shader_resource) != TextureUsage(0))
-    {
-        flags |= VK_IMAGE_USAGE_SAMPLED_BIT;
-    }
-
-    if ((textureUsage & TextureUsage::unordered_access) != TextureUsage(0))
-    {
-        flags |= VK_IMAGE_USAGE_STORAGE_BIT;
-    }
-
-    if ((textureUsage & TextureUsage::render_target) != TextureUsage(0))
-    {
-        flags |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-    }
-
-    if ((textureUsage & TextureUsage::depth_stencil) != TextureUsage(0))
-    {
-        flags |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-    }
-
-    if ((textureUsage & TextureUsage::input) != TextureUsage(0))
-    {
-        flags |= VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
-    }
-
-    if ((textureUsage & TextureUsage::transient) != TextureUsage(0))
-    {
-        flags |= VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT;
-    }
-
-    return flags;
 }
 
 END_GAIA_VK1

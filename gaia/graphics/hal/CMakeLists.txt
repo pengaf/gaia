@@ -5,6 +5,7 @@ set(header_files
     ${CMAKE_CURRENT_SOURCE_DIR}/mesh_shader_element.h
     ${CMAKE_CURRENT_SOURCE_DIR}/ray_tracing_element.h
     ${CMAKE_CURRENT_SOURCE_DIR}/render_element.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/resource.h
     ${CMAKE_CURRENT_SOURCE_DIR}/render_element_common.h
     ${CMAKE_CURRENT_SOURCE_DIR}/utility.h
     ${CMAKE_CURRENT_SOURCE_DIR}/vertex_shader_element.h

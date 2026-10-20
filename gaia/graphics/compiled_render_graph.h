@@ -17,7 +17,8 @@ public:
 	uint32_t addBuffer(std::string_view name, const BufferDesc& desc);
 	//uint32_t addExternalTexture(std::string_view name, Texture* texture, ResourceState oldState);
 	//uint32_t addExternalBuffer(std::string_view name, Buffer* buffer, ResourceState oldState);
-	uint32_t cloneExternalResource(ExternalResource* src);
+	uint32_t cloneExternalTexture(ExternalTexture* externalTexture);
+	uint32_t cloneExternalBuffer(ExternalBuffer* externalBuffer);
 	ScenePass* addScenePass(std::string_view name);
 	ImagePass* addImagePass(std::string_view name);
 	ComputePass* addComputePass(std::string_view name);
@@ -42,14 +43,23 @@ public:
 		GAIA_ASSERT(index < m_passes.size());
 		return m_passes[index].get();
 	}
+	uint32_t addResource(std::string_view name, const TextureDesc& desc)
+	{
+		return addTexture(name, desc);
+	}
+	uint32_t addResource(std::string_view name, const BufferDesc& desc)
+	{
+		return addBuffer(name, desc);
+	}
+	Pass* addPassFromSource(const RenderGraphBase::Pass<false>* srcPass);
 public:
 	std::vector<std::unique_ptr<Resource>> m_resources;
 	std::vector<std::unique_ptr<Pass>> m_passes;
 private:
 	template<typename T>
-	T* addPass(std::string_view name);
+	T* addPass_(std::string_view name);
 	template<typename T, class...Args>
-	uint32_t addResource(Args&&... args);
+	uint32_t addResource_(Args&&... args);
 };
 
 END_GAIA

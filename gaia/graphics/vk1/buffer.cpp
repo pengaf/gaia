@@ -3,44 +3,6 @@
 
 BEGIN_GAIA_VK1
 
-VkBufferUsageFlags MappingBufferUsage(BufferUsage bufferUsage)
-{
-	VkBufferUsageFlags result = 0;
-	if ((bufferUsage & BufferUsage::uniform) != BufferUsage(0))
-	{
-		result |= VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-	}
-	if ((bufferUsage & BufferUsage::storage) != BufferUsage(0))
-	{
-		result |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-	}
-	if ((bufferUsage & BufferUsage::index) != BufferUsage(0))
-	{
-		result |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-	}
-	if ((bufferUsage & BufferUsage::vertex) != BufferUsage(0))
-	{
-		result |= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-	}
-	if ((bufferUsage & BufferUsage::indirect) != BufferUsage(0))
-	{
-		result |= VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
-	}
-	if ((bufferUsage & BufferUsage::copy_src) != BufferUsage(0))
-	{
-		result |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-	}
-	if ((bufferUsage & BufferUsage::copy_dst) != BufferUsage(0))
-	{
-		result |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-	}
-	if ((bufferUsage & BufferUsage::query_resolve) != BufferUsage(0))
-	{
-		result |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-	}
-	return result;
-};
-
 
 RefPtr<Buffer> Buffer::New(RenderSystem* renderSystem, const BufferDesc& desc)
 {

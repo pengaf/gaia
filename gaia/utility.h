@@ -47,9 +47,6 @@
   inline const T& name() const noexcept { /* NOLINT */                  \
     return this->m_##name;                                              \
   }                                                                     \
-  inline T& name() noexcept { /* NOLINT */                              \
-    return this->m_##name;                                              \
-  }                                                                     \
  protected:                                                             \
   T m_##name{__VA_ARGS__} /* NOLINT */
 

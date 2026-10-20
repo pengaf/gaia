@@ -2,7 +2,6 @@
 #include "utility.h"
 #include "../common.h"
 #include "detail/vulkan.h"
-#include "detail/vk_mem_alloc.h"
 
 BEGIN_GAIA_VK1
 
