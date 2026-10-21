@@ -69,15 +69,21 @@ CompiledRenderGraph::Pass* CompiledRenderGraph::addPassFromSource(const RenderGr
 	Pass* dstPass = nullptr;
 	switch (srcPass->kind())
 	{
-	case RenderPassKind::scene_pass:
-		dstPass = addScenePass(srcPass->name());
-		break;
-	case RenderPassKind::image_pass:
-		dstPass = addImagePass(srcPass->name());
-		break;
-	case RenderPassKind::compute_pass:
-		dstPass = addComputePass(srcPass->name());
-		break;
+	case RenderPassKind::scene_pass: {
+		ScenePass* scenePass = addScenePass(srcPass->name());
+		dstPass = scenePass;
+		break;}
+	case RenderPassKind::image_pass:{
+		ImagePass* imagePass = addImagePass(srcPass->name());
+		imagePass->vertexCount(static_cast<const RenderGraphBase::ImagePass<false>*>(srcPass)->vertexCount());
+		dstPass = imagePass;
+		break;}
+	case RenderPassKind::compute_pass: {
+		auto* srcComputePass = static_cast<const RenderGraphBase::ComputePass<false>*>(srcPass);
+		ComputePass* computePass = addComputePass(srcPass->name());
+		computePass->setDispatch(srcComputePass->dispatchX(), srcComputePass->dispatchY(), srcComputePass->dispatchZ());
+		dstPass = computePass;
+		break;}
 	case RenderPassKind::ray_tracing_pass:
 		dstPass = addRayTracingPass(srcPass->name());
 		break;

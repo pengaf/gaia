@@ -17,14 +17,17 @@ enum class ResourceState
     common,
     copy_src,
     copy_dst,
-    shader_resource,
-    unordered_access,
+    shader_read,
+    shader_write,
+    shader_read_write,
     render_target,
-    depth_stencil,
+    depth_stencil_write,
+    depth_stencil_read,
     vertex_buffer,
     index_buffer,
     uniform_buffer,
     indirect_args,
+    query_resolve,
     present,
 };
 
@@ -145,6 +148,13 @@ enum class TextureFormat
     count,
 };
 
+struct TextureSubRange
+{
+    uint32_t baseMipLevel;
+    uint32_t levelCount;
+    uint32_t baseArrayLayer;
+    uint32_t layerCount;
+};
 
 enum class ShaderType
 {
@@ -371,13 +381,13 @@ struct TextureDesc
 
 enum class TextureViewDimension : uint8_t
 {
-    texture_1d,
-    texture_2d,
-    texture_3d,
-    texture_cube,
-    texture_1d_array,
-    texture_2d_array,
-    texture_cube_array,
+    texture_view_1d,
+    texture_view_2d,
+    texture_view_3d,
+    texture_view_cube,
+    texture_view_1d_array,
+    texture_view_2d_array,
+    texture_view_cube_array,
 };
 
 struct RenderTargetViewDesc
@@ -385,9 +395,9 @@ struct RenderTargetViewDesc
     TextureViewDimension dimension;
     TextureFormat format;
     uint32_t baseMipLevel;
-    uint32_t mipLevelCount;
+    uint32_t levelCount;
     uint32_t baseArrayLayer;
-    uint32_t arrayLayerCount;
+    uint32_t layerCount;
 };
 
 struct DepthStencilViewDesc
@@ -395,9 +405,9 @@ struct DepthStencilViewDesc
     TextureViewDimension dimension;
     TextureFormat format;
     uint32_t baseMipLevel;
-    uint32_t mipLevelCount;
+    uint32_t levelCount;
     uint32_t baseArrayLayer;
-    uint32_t arrayLayerCount;
+    uint32_t layerCount;
 	bool readOnly;
 };
 

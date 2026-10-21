@@ -137,7 +137,7 @@ public:
 			m_colorAttachmentInfos[i].sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
 			m_colorAttachmentInfos[i].pNext = nullptr;
 			m_colorAttachmentInfos[i].imageView = VK_NULL_HANDLE;
-			m_colorAttachmentInfos[i].imageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+			m_colorAttachmentInfos[i].imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 			m_colorAttachmentInfos[i].resolveMode = VK_RESOLVE_MODE_NONE;
 			m_colorAttachmentInfos[i].resolveImageView = VK_NULL_HANDLE;
 			m_colorAttachmentInfos[i].resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED;

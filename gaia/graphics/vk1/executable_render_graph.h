@@ -10,6 +10,7 @@ class TextureHandle;
 class BufferHandle;
 class Texture;
 class Buffer;
+class RenderSystem;
 
 class ExecutableRenderGraph
 {
@@ -70,14 +71,16 @@ public:
 			m_barrierSet.execute(commandBuffer);
 			m_bindPipeline.execute(commandBuffer);
 			m_bindDescriptorSets.execute(commandBuffer);
-			m_Dispatch.execute(commandBuffer);
+			m_dispatch.execute(commandBuffer);
 		}
 	public:
 		BarrierCommandSet m_barrierSet;
 		BindPipelineCommand m_bindPipeline;
 		BindDescriptorSetsCommand m_bindDescriptorSets;
-		DispatchCommand m_Dispatch;
+		DispatchCommand m_dispatch;
 	};
+public:
+	void reset(RenderSystem* renderSystem);
 public:
 	std::vector<TextureHandle> m_textures;
 	std::vector<BufferHandle> m_buffers;

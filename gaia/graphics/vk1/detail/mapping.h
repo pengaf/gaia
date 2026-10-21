@@ -6,9 +6,15 @@
 
 BEGIN_GAIA_VK1
 
-VkBufferUsageFlags MappingBufferUsage(BufferUsage bufferUsage);
-VkImageUsageFlags MappingTextureUsage(TextureUsage usage);
-VkFormat MappingTextureFormat(TextureFormat format);
-VkImageType MappingTextureType(TextureDimension dim);
+VkBufferUsageFlags MapBufferUsage(BufferUsage bufferUsage);
+VkImageUsageFlags MapTextureUsage(TextureUsage usage);
+VkFormat MapTextureFormat(TextureFormat format);
+VkImageType MapTextureDimension(TextureDimension dim);
+VkImageViewType MapTextureViewDimension(TextureViewDimension dim);
+
+VkAccessFlags MapBufferState(ResourceState state);
+void MapTextureState(VkAccessFlags& accessFlags, VkImageLayout& imageLayout, ResourceState state);
+void MapRenderTargetViewDesc(VkImageViewCreateInfo& dst, const RenderTargetViewDesc& src, VkImage image);
+
 
 END_GAIA_VK1

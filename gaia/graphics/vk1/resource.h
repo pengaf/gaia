@@ -21,6 +21,11 @@ private:
 	Buffer& operator = (Buffer&&) = delete;
 	Buffer(VkBuffer buffer, VmaAllocation allocation, RenderSystem* renderSystem, const BufferDesc& desc);
 	~Buffer();
+public:
+	VkBuffer nativeHandle() const
+	{
+		return m_buffer;
+	}
 protected:
 	VkBuffer m_buffer{ VK_NULL_HANDLE };
 	VmaAllocation m_allocation{ VK_NULL_HANDLE };
@@ -43,6 +48,11 @@ private:
 	Texture& operator = (Texture&&) = delete;
 	Texture(VkImage image, VmaAllocation allocation, RenderSystem* renderSystem, const TextureDesc& desc);
 	~Texture();
+public:
+	VkImage nativeHandle() const
+	{
+		return m_image;
+	}
 private:
 	VkImage m_image{ VK_NULL_HANDLE };
 	VmaAllocation m_allocation{ VK_NULL_HANDLE };

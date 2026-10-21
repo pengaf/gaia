@@ -1,4 +1,5 @@
 set(source_files
+    ${CMAKE_CURRENT_SOURCE_DIR}/executable_render_graph.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/render_graph_translator.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/render_system.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/render_window.cpp

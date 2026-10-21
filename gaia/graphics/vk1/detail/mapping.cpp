@@ -2,7 +2,7 @@
 
 BEGIN_GAIA_VK1
 
-VkBufferUsageFlags MappingBufferUsage(BufferUsage bufferUsage)
+VkBufferUsageFlags MapBufferUsage(BufferUsage bufferUsage)
 {
     VkBufferUsageFlags result = 0;
     if ((bufferUsage & BufferUsage::uniform) != BufferUsage(0))
@@ -41,7 +41,7 @@ VkBufferUsageFlags MappingBufferUsage(BufferUsage bufferUsage)
 };
 
 
-VkImageUsageFlags MappingTextureUsage(TextureUsage textureUsage)
+VkImageUsageFlags MapTextureUsage(TextureUsage textureUsage)
 {
     VkImageUsageFlags flags = 0;
 
@@ -205,7 +205,7 @@ static VkFormat s_formats[] =
     VK_FORMAT_ASTC_12x12_SRGB_BLOCK,
 };
 
-VkFormat MappingTextureFormat(TextureFormat format)
+VkFormat MapTextureFormat(TextureFormat format)
 {
     static_assert(sizeof(s_formats) / sizeof(s_formats[0]) == uint32_t(TextureFormat::count));
     if (uint32_t(format) < sizeof(s_formats) / sizeof(s_formats[0]))
@@ -215,7 +215,7 @@ VkFormat MappingTextureFormat(TextureFormat format)
     return VK_FORMAT_UNDEFINED;
 }
 
-VkImageType MappingTextureType(TextureDimension dim)
+VkImageType MapTextureDimension(TextureDimension dim)
 {
     switch (dim)
     {
@@ -226,8 +226,182 @@ VkImageType MappingTextureType(TextureDimension dim)
     case TextureDimension::tex3d:
         return VK_IMAGE_TYPE_3D;
     default:
-        return VK_IMAGE_TYPE_2D;
+        GAIA_ASSERT(false);
+        return VK_IMAGE_TYPE_MAX_ENUM;
     }
+}
+
+VkImageViewType MapTextureViewDimension(TextureViewDimension dim)
+{
+	switch (dim)
+	{
+	case TextureViewDimension::texture_view_1d:
+		return VK_IMAGE_VIEW_TYPE_1D;
+	case TextureViewDimension::texture_view_2d:
+		return VK_IMAGE_VIEW_TYPE_2D;
+	case TextureViewDimension::texture_view_3d:
+		return VK_IMAGE_VIEW_TYPE_3D;
+	case TextureViewDimension::texture_view_cube:
+		return VK_IMAGE_VIEW_TYPE_CUBE;
+	case TextureViewDimension::texture_view_1d_array:
+		return VK_IMAGE_VIEW_TYPE_1D_ARRAY;
+	case TextureViewDimension::texture_view_2d_array:
+		return VK_IMAGE_VIEW_TYPE_2D_ARRAY;
+	case TextureViewDimension::texture_view_cube_array:
+		return VK_IMAGE_VIEW_TYPE_CUBE_ARRAY;
+	default:
+		return VK_IMAGE_VIEW_TYPE_MAX_ENUM;
+	}
+}
+
+VkAccessFlags MapBufferState(ResourceState state)
+{
+    switch (state)
+    {
+    case ResourceState::undefined:
+        return 0;
+
+    case ResourceState::common:
+        return VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
+
+    case ResourceState::copy_src:
+        return VK_ACCESS_TRANSFER_READ_BIT;
+
+    case ResourceState::copy_dst:
+        return VK_ACCESS_TRANSFER_WRITE_BIT;
+
+    case ResourceState::shader_read:
+        return VK_ACCESS_SHADER_READ_BIT;
+
+    case ResourceState::shader_write:
+        return VK_ACCESS_SHADER_WRITE_BIT;
+
+    case ResourceState::shader_read_write:
+        return VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
+
+    case ResourceState::vertex_buffer:
+        return VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT;
+
+    case ResourceState::index_buffer:
+        return VK_ACCESS_INDEX_READ_BIT;
+
+    case ResourceState::uniform_buffer:
+        return VK_ACCESS_UNIFORM_READ_BIT;
+
+    case ResourceState::indirect_args:
+        return VK_ACCESS_INDIRECT_COMMAND_READ_BIT;
+
+    case ResourceState::query_resolve:
+        return VK_ACCESS_TRANSFER_WRITE_BIT; 
+
+    case ResourceState::render_target:
+    case ResourceState::depth_stencil_write:
+    case ResourceState::depth_stencil_read:
+    case ResourceState::present:
+        GAIA_ASSERT(false);
+        return 0;
+
+    default:
+        GAIA_ASSERT(false);
+        return 0;
+    }
+}
+
+
+void MapTextureState(VkAccessFlags& accessFlags, VkImageLayout& imageLayout, ResourceState state)
+{
+    switch (state)
+    {
+    case ResourceState::undefined:
+        imageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        accessFlags = 0;
+        break;
+
+    case ResourceState::common:
+        imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+        accessFlags = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
+        break;
+
+    case ResourceState::copy_src:
+        imageLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+        accessFlags = VK_ACCESS_TRANSFER_READ_BIT;
+        break;
+
+    case ResourceState::copy_dst:
+        imageLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+        accessFlags = VK_ACCESS_TRANSFER_WRITE_BIT;
+        break;
+
+    case ResourceState::shader_read:
+        imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        accessFlags = VK_ACCESS_SHADER_READ_BIT;
+        break;
+
+    case ResourceState::shader_write:
+        imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+        accessFlags = VK_ACCESS_SHADER_WRITE_BIT;
+        break;
+
+    case ResourceState::shader_read_write:
+        imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+        accessFlags = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
+        break;
+
+    case ResourceState::render_target:
+        imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        accessFlags = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        break;
+
+    case ResourceState::depth_stencil_write:
+        imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+        accessFlags = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+        break;
+
+    case ResourceState::depth_stencil_read:
+        imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+        accessFlags = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_SHADER_READ_BIT;
+        break;
+
+    case ResourceState::present:
+        imageLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+        accessFlags = 0;
+        break;
+
+    case ResourceState::vertex_buffer:
+    case ResourceState::index_buffer:
+    case ResourceState::uniform_buffer:
+    case ResourceState::indirect_args:
+    case ResourceState::query_resolve:
+        GAIA_ASSERT(false);
+        imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+        accessFlags = 0;
+        break;
+
+    default:
+        GAIA_ASSERT(false);
+        imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+        accessFlags = 0;
+        break;
+    }
+}
+
+void MapRenderTargetViewDesc(VkImageViewCreateInfo& dst, const RenderTargetViewDesc& src, VkImage image)
+{
+    dst.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    dst.pNext = nullptr;
+    dst.flags = 0;
+    dst.image = image, 
+    dst.viewType = MapTextureViewDimension(src.dimension);
+    dst.format = MapTextureFormat(src.format);
+    dst.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+    dst.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+    dst.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+    dst.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+    dst.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    dst.subresourceRange.baseMipLevel = src.baseMipLevel;
+    dst.subresourceRange.levelCount = src.levelCount;
+    dst.subresourceRange.baseArrayLayer = src.baseArrayLayer;
+    dst.subresourceRange.layerCount = src.layerCount;
 }
 
 END_GAIA_VK1

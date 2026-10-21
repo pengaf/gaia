@@ -61,12 +61,28 @@ public:
 		GAIA_ARG_RO(BufferDesc, desc);
 	};
 
+	struct TextureSubState
+	{
+		ResourceState state;
+		TextureSubRange range;
+	};
+
 	class ExternalTexture : public Resource
 	{
 	public:
-		ExternalTexture(std::string_view name, gaia::Texture* texture, ResourceState oldState) : Resource(ResourceKind::external_texture, name), m_texture(texture), m_oldState(oldState) {}
+		ExternalTexture(std::string_view name, gaia::Texture* texture) : Resource(ResourceKind::external_texture, name), m_texture(texture) {}
 	public:
-		GAIA_ARG_RO(ResourceState, oldState);
+		void addEnterSubState(const TextureSubState& subState)
+		{
+			m_enterState.push_back(subState);
+		}
+		void addExitSubState(const TextureSubState& subState)
+		{
+			m_exitState.push_back(subState);
+		}
+	public:
+		GAIA_ARG_RO(std::vector<TextureSubState>, enterState);
+		GAIA_ARG_RO(std::vector<TextureSubState>, exitState);
 	public:
 		gaia::Texture* texture() const
 		{
@@ -79,9 +95,10 @@ public:
 	class ExternalBuffer : public Resource
 	{
 	public:
-		ExternalBuffer(std::string_view name, gaia::Buffer* buffer, ResourceState oldState) : Resource(ResourceKind::external_buffer, name), m_buffer(buffer), m_oldState(oldState) {}
+		ExternalBuffer(std::string_view name, gaia::Buffer* buffer, ResourceState enterState, ResourceState exitState) : Resource(ResourceKind::external_buffer, name), m_buffer(buffer), m_enterState(enterState), m_exitState(exitState) {}
 	public:
-		GAIA_ARG_RO(ResourceState, oldState);
+		GAIA_ARG_RO(ResourceState, enterState);
+		GAIA_ARG_RO(ResourceState, exitState);
 	public:
 		gaia::Buffer* buffer() const
 		{
@@ -362,6 +379,7 @@ public:
 		GAIA_ARG_RO(std::vector<SRV>, srvs);
 		GAIA_ARG_RO(std::vector<RTV>, rtvs);
 		GAIA_ARG_PTR(GraphicsPipelineState, pipeline);
+		GAIA_ARG(uint32_t, vertexCount, 3);
 	};
 
 	template<bool t_compiled>
@@ -370,6 +388,13 @@ public:
 	public:
 		ComputePass(std::string_view name) : Pass<t_compiled>(name, RenderPassKind::compute_pass) {}
 	public:
+		void setDispatch(uint32_t x, uint32_t y, uint32_t z)
+		{
+			m_dispatchX = x;
+			m_dispatchY = y;
+			m_dispatchZ = z;
+		}
+
 		void addSRV(uint32_t resource, const ShaderResourceViewDesc& desc)
 		{
 			m_srvs.push_back({ resource, desc });
@@ -417,6 +442,9 @@ public:
 		GAIA_ARG_RO(std::vector<SRV>, srvs);
 		GAIA_ARG_RO(std::vector<UAV>, uavs);
 		GAIA_ARG_PTR(ComputePipelineState, pipeline);
+		GAIA_ARG(uint32_t, dispatchX);
+		GAIA_ARG(uint32_t, dispatchY);
+		GAIA_ARG(uint32_t, dispatchZ);
 	};
 
 	template<bool t_compiled>

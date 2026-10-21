@@ -541,7 +541,7 @@ BufferHandle RenderSystem::createBufferHandle(const BufferDesc& desc)
 	{
 		.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
 		.size = desc.size,
-		.usage = MappingBufferUsage(desc.bufferUsage),
+		.usage = MapBufferUsage(desc.bufferUsage),
 		.sharingMode = VK_SHARING_MODE_EXCLUSIVE
 	};
 
@@ -597,14 +597,14 @@ TextureHandle RenderSystem::createTextureHandle(const TextureDesc& desc)
 {
 	VkImageCreateInfo imageCreateInfo{};
 	imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-	imageCreateInfo.imageType = MappingTextureType(desc.dimension);
-	imageCreateInfo.format = MappingTextureFormat(desc.format);
+	imageCreateInfo.imageType = MapTextureDimension(desc.dimension);
+	imageCreateInfo.format = MapTextureFormat(desc.format);
 	imageCreateInfo.extent = { desc.width, desc.height, desc.depth };
 	imageCreateInfo.mipLevels = desc.mipLevels;
 	imageCreateInfo.arrayLayers = desc.arrayLayers;
 	imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
 	imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-	imageCreateInfo.usage = MappingTextureUsage(desc.textureUsage);
+	imageCreateInfo.usage = MapTextureUsage(desc.textureUsage);
 	imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 	imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 

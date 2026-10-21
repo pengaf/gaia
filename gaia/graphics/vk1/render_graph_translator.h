@@ -11,27 +11,32 @@ class ExecutableRenderGraph;
 class RenderGraphTranslator
 {
 public:
-	enum class ErrorCode
+	enum class DiagnosticCode
 	{
-		success,
-		create_texture_failed,
-		create_buffer_failed,
-		create_image_view_failed,
+		begin_error,
+		error_create_texture_failed,
+		error_create_buffer_failed,
+		error_create_image_view_failed,
+		end_error,
+		begin_warning,
+		warning_subresource_never_used,
+		end_warning,
 	};
 	static constexpr uint32_t invalid_resource = UINT32_MAX;
 	static constexpr uint32_t invalid_pass = UINT32_MAX;
-	struct ErrorItem
+	struct DiagnosticItem
 	{
-		ErrorCode code;
+		DiagnosticCode code;
 		uint32_t resource = invalid_resource;
 		uint32_t pass = invalid_pass;
 	};
-	struct ErrorInfo
+	struct DiagnosticInfo
 	{
-		std::vector<ErrorItem> errors;
+		std::vector<DiagnosticItem> errors;
+		std::vector<DiagnosticItem> warnings;
 	};
 public:
-	static ErrorInfo translate(ExecutableRenderGraph* executableRenderGraph, const CompiledRenderGraph* compiledRenderGraph, RenderSystem* renderSystem);
+	static DiagnosticInfo translate(ExecutableRenderGraph* executableRenderGraph, const CompiledRenderGraph* compiledRenderGraph, RenderSystem* renderSystem);
 };
 
 END_GAIA_VK1
