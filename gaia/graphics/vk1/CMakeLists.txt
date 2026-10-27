@@ -1,5 +1,6 @@
 set(source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/executable_render_graph.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/pipeline.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/render_graph_translator.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/render_system.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/render_window.cpp
@@ -8,12 +9,12 @@ set(source_files
 set(header_files
     ${CMAKE_CURRENT_SOURCE_DIR}/common.h
     ${CMAKE_CURRENT_SOURCE_DIR}/compute_element.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/graphics_pipeline.h
     ${CMAKE_CURRENT_SOURCE_DIR}/hal_fwd.h
     ${CMAKE_CURRENT_SOURCE_DIR}/mesh_shader_element.h
     ${CMAKE_CURRENT_SOURCE_DIR}/ray_tracing_element.h
     ${CMAKE_CURRENT_SOURCE_DIR}/render_element.h
     ${CMAKE_CURRENT_SOURCE_DIR}/executable_render_graph.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/pipeline.h
     ${CMAKE_CURRENT_SOURCE_DIR}/render_graph_translator.h
     ${CMAKE_CURRENT_SOURCE_DIR}/render_system.h
     ${CMAKE_CURRENT_SOURCE_DIR}/render_window.h

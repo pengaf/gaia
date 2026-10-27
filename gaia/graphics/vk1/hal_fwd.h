@@ -17,10 +17,10 @@ class ComputeState;
 class RayTracingState;
 class MeshShaderState;
 
-class GraphicsPipelineState;
-class ComputePipelineState;
-class RayTracingPipelineState;
-class MeshShaderPipelineState;
+class GraphicsPipeline;
+class ComputePipeline;
+class RayTracingPipeline;
+class MeshShaderPipeline;
 
 class VertexShaderElement;
 class MeshShaderElement;

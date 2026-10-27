@@ -69,7 +69,7 @@ class Mesh;
 class Buffer;
 class ShaderResourceView;
 class RenderSystem;
-class GraphicsPipelineState;
+class GraphicsPipeline;
 
 class VertexShaderElement : public RenderElement
 {
@@ -108,7 +108,7 @@ public:
 	VkBuffer m_indirectBuffer{ VK_NULL_HANDLE };
 	//VkBuffer m_countBuffer{ VK_NULL_HANDLE };
 public:
-	static VertexShaderElement* New(RenderSystem* renderSystem, GraphicsPipelineState* pipelineState);
+	static VertexShaderElement* New(RenderSystem* renderSystem, GraphicsPipeline* pipelineState);
 };
 
 

@@ -2,16 +2,12 @@
 
 #include "utility.h"
 #include "common.h"
-#include "hal/resource.h"
+#include "hal/hal_fwd.h"
 #include <vector>
 #include <string>
 #include <memory>
 
 BEGIN_GAIA
-
-class GraphicsPipelineState;
-class ComputePipelineState;
-class RayTracingPipelineState;
 
 class RenderGraphBase
 {
@@ -326,6 +322,23 @@ public:
 		GAIA_ARG_RO(DSV, dsv);
 	};
 
+	//template<bool t_compiled>
+	//class ScenePass : public ScenePassBase<t_compiled>
+	//{
+	//public:
+	//	using ScenePassBase<t_compiled>::ScenePassBase;
+	//};
+
+	//template<>
+	//class ScenePass<true> : public ScenePassBase<true>
+	//{
+	//public:
+	//	using ScenePassBase<true>::ScenePassBase;
+	//public:
+	//	GAIA_ARG(uint32_t, renderWidth, 0);
+	//	GAIA_ARG(uint32_t, renderHeight, 0);
+	//};
+
 	template<bool t_compiled>
 	class ImagePass : public Pass<t_compiled>
 	{
@@ -378,7 +391,7 @@ public:
 	public:
 		GAIA_ARG_RO(std::vector<SRV>, srvs);
 		GAIA_ARG_RO(std::vector<RTV>, rtvs);
-		GAIA_ARG_PTR(GraphicsPipelineState, pipeline);
+		GAIA_ARG_PTR(GraphicsPipeline, pipeline);
 		GAIA_ARG(uint32_t, vertexCount, 3);
 	};
 
@@ -441,7 +454,7 @@ public:
 	public:
 		GAIA_ARG_RO(std::vector<SRV>, srvs);
 		GAIA_ARG_RO(std::vector<UAV>, uavs);
-		GAIA_ARG_PTR(ComputePipelineState, pipeline);
+		GAIA_ARG_PTR(ComputePipeline, pipeline);
 		GAIA_ARG(uint32_t, dispatchX);
 		GAIA_ARG(uint32_t, dispatchY);
 		GAIA_ARG(uint32_t, dispatchZ);
@@ -499,7 +512,7 @@ public:
 	public:
 		GAIA_ARG_RO(std::vector<SRV>, srvs);
 		GAIA_ARG_RO(std::vector<UAV>, uavs);
-		GAIA_ARG_PTR(RayTracingPipelineState, pipeline);
+		GAIA_ARG_PTR(RayTracingPipeline, pipeline);
 	};
 };
 

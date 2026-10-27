@@ -7,60 +7,95 @@
 #define END_GAIA }
 
 #define GAIA_ARG(T, name, ...)				                            \
- public:                                                                \
-  inline auto name(const T& new_##name)->decltype(*this) { /* NOLINT */ \
-    this->m_##name = new_##name;										\
-    return *this;                                                       \
-  }                                                                     \
-  inline auto name(T&& new_##name)->decltype(*this) { /* NOLINT */      \
-    this->m_##name = std::move(new_##name);                             \
-    return *this;                                                       \
-  }                                                                     \
-  inline const T& name() const noexcept { /* NOLINT */                  \
-    return this->m_##name;                                              \
-  }                                                                     \
-  inline T& name() noexcept { /* NOLINT */                              \
-    return this->m_##name;                                              \
-  }                                                                     \
- protected:                                                             \
-  T m_##name{__VA_ARGS__} /* NOLINT */
+public:                                                                 \
+    inline auto& name(const T& new_##name)                              \
+    {                                                                   \
+        this->m_##name = new_##name;								    \
+        return *this;                                                   \
+    }                                                                   \
+    inline auto& name(T&& new_##name)                                   \
+    {                                                                   \
+        this->m_##name = std::move(new_##name);                         \
+        return *this;                                                   \
+    }                                                                   \
+    inline const T& name() const noexcept                               \
+    {                                                                   \
+        return this->m_##name;                                          \
+    }                                                                   \
+    inline T& name() noexcept                                           \
+    {                                                                   \
+        return this->m_##name;                                          \
+    }                                                                   \
+protected:                                                              \
+    T m_##name{__VA_ARGS__}
+
+
+#define GAIA_ARG_VAL(T, name, ...)				                        \
+public:                                                                 \
+    inline auto& name(T new_##name)                                     \
+    {                                                                   \
+        this->m_##name = std::move(new_##name);						    \
+        return *this;                                                   \
+    }                                                                   \
+    inline T name() const                                               \
+    {                                                                   \
+        return this->m_##name;                                          \
+    }                                                                   \
+protected:                                                              \
+    T m_##name{__VA_ARGS__}
 
 
 #define GAIA_ARG_PTR(T, name, ...)				                        \
- public:                                                                \
-  inline auto name(T* new_##name)->decltype(*this) { /* NOLINT */       \
-    this->m_##name = new_##name;										\
-    return *this;                                                       \
-  }                                                                     \
-  inline const T* name() const noexcept { /* NOLINT */                  \
-    return this->m_##name;                                              \
-  }                                                                     \
-  inline T* name() noexcept { /* NOLINT */                              \
-    return this->m_##name;                                              \
-  }                                                                     \
- protected:                                                             \
-  T* m_##name{__VA_ARGS__} /* NOLINT */
+public:                                                                 \
+    inline auto& name(T* new_##name)                                    \
+    {                                                                   \
+        this->m_##name = new_##name;								    \
+        return *this;                                                   \
+    }                                                                   \
+    inline const T* name() const noexcept                               \
+    {                                                                   \
+        return this->m_##name;                                          \
+    }                                                                   \
+    inline T* name() noexcept                                           \
+    {                                                                   \
+        return this->m_##name;                                          \
+    }                                                                   \
+protected:                                                              \
+    T* m_##name{__VA_ARGS__}
 
 
 #define GAIA_ARG_RO(T, name, ...)					                    \
- public:                                                                \
-  inline const T& name() const noexcept { /* NOLINT */                  \
-    return this->m_##name;                                              \
-  }                                                                     \
+public:                                                                 \
+    inline const T& name() const noexcept                               \
+    {                                                                   \
+        return this->m_##name;                                          \
+    }                                                                   \
  protected:                                                             \
-  T m_##name{__VA_ARGS__} /* NOLINT */
+  T m_##name{__VA_ARGS__}
 
 
-#define GAIA_ARG_PTR_RO(T, name, ...)					                \
- public:                                                                \
-  inline const T* name() const noexcept { /* NOLINT */                  \
-    return this->m_##name;                                              \
-  }                                                                     \
-  inline T* name() noexcept { /* NOLINT */                              \
-    return this->m_##name;                                              \
-  }                                                                     \
+#define GAIA_ARG_RO_VAL(T, name, ...)					                \
+public:                                                                 \
+    inline T name() const                                               \
+    {                                                                   \
+        return this->m_##name;                                          \
+    }                                                                   \
  protected:                                                             \
-  T* m_##name{__VA_ARGS__} /* NOLINT */
+  T m_##name{__VA_ARGS__}
+
+
+#define GAIA_ARG_RO_PTR(T, name, ...)					                \
+public:                                                                 \
+    inline const T* name() const noexcept                               \
+    {                                                                   \
+        return this->m_##name;                                          \
+    }                                                                   \
+    inline T* name() noexcept                                           \
+    {                                                                   \
+        return this->m_##name;                                          \
+    }                                                                   \
+protected:                                                              \
+    T* m_##name{__VA_ARGS__}
 
 
 #ifndef GAIA_PLATFORM_WEB

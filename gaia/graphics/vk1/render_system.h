@@ -100,16 +100,16 @@ public:
 	//MissShader* createMissShader(const char* code, size_t codeSize, const char* entryPoint);
 	//CallableShader* createCallableShader(const char* code, size_t codeSize, const char* entryPoint);
 
-	GraphicsPipelineState* createGraphicsPipelineState(const GraphicsPipelineDesc& desc);
-	ComputePipelineState* createComputePipelineState(const ComputePipelineDesc& desc);
-	RayTracingPipelineState* createRayTracingPipelineState(const RayTracingPipelineDesc& desc);
-	MeshShaderPipelineState* createMeshShaderPipelineState(const MeshShaderPipelineDesc& desc);
+	GraphicsPipeline* createGraphicsPipelineState(const GraphicsPipelineDesc& desc);
+	ComputePipeline* createComputePipelineState(const ComputePipelineDesc& desc);
+	RayTracingPipeline* createRayTracingPipelineState(const RayTracingPipelineDesc& desc);
+	MeshShaderPipeline* createMeshShaderPipelineState(const MeshShaderPipelineDesc& desc);
 
 
-	//GraphicsPipelineState* createGraphicsPipelineState(const GraphicsPipelineStateDesc& desc);
-	//ComputePipelineState* createComputePipelineState(const ComputePipelineStateDesc& desc);
-	//RayTracingPipelineState* createRayTracingPipelineState(const RayTracingPipelineStateDesc& desc);
-	//MeshShaderPipelineState* createMeshShaderPipelineState(const MeshShaderPipelineStateDesc& desc);
+	//GraphicsPipeline* createGraphicsPipelineState(const GraphicsPipelineStateDesc& desc);
+	//ComputePipeline* createComputePipelineState(const ComputePipelineStateDesc& desc);
+	//RayTracingPipeline* createRayTracingPipelineState(const RayTracingPipelineStateDesc& desc);
+	//MeshShaderPipeline* createMeshShaderPipelineState(const MeshShaderPipelineStateDesc& desc);
 
 	RenderWindow* createRenderWindow(void* platformHandle);
 public:

@@ -17,10 +17,10 @@ using ComputeState = vk1::ComputeState;
 using RayTracingState = vk1::RayTracingState;
 using MeshShaderState = vk1::MeshShaderState;
 
-using GraphicsPipelineState = vk1::GraphicsPipelineState;
-using ComputePipelineState = vk1::ComputePipelineState;
-using RayTracingPipelineState = vk1::RayTracingPipelineState;
-using MeshShaderPipelineState = vk1::MeshShaderPipelineState;
+using GraphicsPipeline = vk1::GraphicsPipeline;
+using ComputePipeline = vk1::ComputePipeline;
+using RayTracingPipeline = vk1::RayTracingPipeline;
+using MeshShaderPipeline = vk1::MeshShaderPipeline;
 using RenderWindow = vk1::RenderWindow;
 
 using RenderElement = vk1::RenderElement;

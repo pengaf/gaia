@@ -15,8 +15,8 @@ public:
 public:
 	uint32_t addTexture(std::string_view name, const TextureDesc& desc);
 	uint32_t addBuffer(std::string_view name, const BufferDesc& desc);
-	uint32_t addExternalTexture(std::string_view name, gaia::Texture* texture, ResourceState oldState);
-	uint32_t addExternalBuffer(std::string_view name, gaia::Buffer* buffer, ResourceState oldState);
+	uint32_t addExternalTexture(std::string_view name, gaia::Texture* texture);
+	uint32_t addExternalBuffer(std::string_view name, gaia::Buffer* buffer, ResourceState enterState, ResourceState exitState);
 	ScenePass* addScenePass(std::string_view name);
 	ImagePass* addImagePass(std::string_view name);
 	ComputePass* addComputePass(std::string_view name);

@@ -34,14 +34,14 @@ uint32_t RenderGraph::addBuffer(std::string_view name, const BufferDesc& desc)
 	return addResource_<Buffer>(name, desc);
 }
 
-uint32_t RenderGraph::addExternalTexture(std::string_view name, gaia::Texture* texture, ResourceState oldState)
+uint32_t RenderGraph::addExternalTexture(std::string_view name, gaia::Texture* texture)
 {
-	return addResource_<ExternalTexture>(name, texture, oldState);
+	return addResource_<ExternalTexture>(name, texture);
 }
 
-uint32_t RenderGraph::addExternalBuffer(std::string_view name, gaia::Buffer* buffer, ResourceState oldState)
+uint32_t RenderGraph::addExternalBuffer(std::string_view name, gaia::Buffer* buffer, ResourceState enterState, ResourceState exitState)
 {
-	return addResource_<ExternalBuffer>(name, buffer, oldState);
+	return addResource_<ExternalBuffer>(name, buffer, enterState, exitState);
 }
 
 RenderGraph::ScenePass* RenderGraph::addScenePass(std::string_view name)

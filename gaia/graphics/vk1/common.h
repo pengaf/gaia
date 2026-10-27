@@ -8,10 +8,18 @@ BEGIN_GAIA_VK1
 
 struct DrawCommand
 {
-	uint32_t m_vertexCount;
-	uint32_t m_instanceCount;
-	uint32_t m_firstVertex;
-	uint32_t m_firstInstance;
+	uint32_t m_vertexCount = 0;
+	uint32_t m_instanceCount = 0;
+	uint32_t m_firstVertex = 0;
+	uint32_t m_firstInstance = 0;
+public:
+	void initialize(uint32_t vertexCount, uint32_t instanceCount = 1, uint32_t firstVertex = 0, uint32_t firstInstance = 0)
+	{
+		m_vertexCount = vertexCount;
+		m_instanceCount = instanceCount;
+		m_firstVertex = firstVertex;
+		m_firstInstance = firstInstance;
+	}
 	void execute(VkCommandBuffer commandBuffer)
 	{
 		vkCmdDraw(commandBuffer, m_vertexCount, m_instanceCount, m_firstVertex, m_firstInstance);
@@ -33,12 +41,35 @@ struct DrawIndexedCommand
 
 struct DispatchCommand
 {
-	uint32_t m_groupCountX;
-	uint32_t m_groupCountY;
-	uint32_t m_groupCountZ;
+	uint32_t m_groupCountX = 0;
+	uint32_t m_groupCountY = 0;
+	uint32_t m_groupCountZ = 0;
+public:
+	void initialize(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)
+	{
+		m_groupCountX = groupCountX;
+		m_groupCountY = groupCountY;
+		m_groupCountZ = groupCountZ;
+	}
 	void execute(VkCommandBuffer commandBuffer)
 	{
 		vkCmdDispatch(commandBuffer, m_groupCountX, m_groupCountY, m_groupCountZ);
+	}
+};
+
+class TraceRaysCommand
+{
+	VkStridedDeviceAddressRegionKHR m_raygenShaderBindingTable{};
+	VkStridedDeviceAddressRegionKHR m_missShaderBindingTable{};
+	VkStridedDeviceAddressRegionKHR m_hitShaderBindingTable{};
+	VkStridedDeviceAddressRegionKHR m_callableShaderBindingTable{};
+	uint32_t m_width = 0;
+	uint32_t m_height = 0;
+	uint32_t m_depth = 0;
+public:
+	void execute(VkCommandBuffer commandBuffer) const
+	{
+		vkCmdTraceRaysKHR(commandBuffer, &m_raygenShaderBindingTable, &m_missShaderBindingTable, &m_hitShaderBindingTable, &m_callableShaderBindingTable, m_width, m_height, m_depth);
 	}
 };
 
@@ -78,30 +109,29 @@ struct BarrierCommandSet
 	}
 };
 
+template<VkPipelineBindPoint t_bindPoint>
 struct BindPipelineCommand
 {
 	VkPipeline m_pipeline;
-	VkPipelineBindPoint m_bindPoint;
-
 	void execute(VkCommandBuffer commandBuffer)
 	{
-		vkCmdBindPipeline(commandBuffer, m_bindPoint, m_pipeline);
+		vkCmdBindPipeline(commandBuffer, t_bindPoint, m_pipeline);
 	}
 };
 
+template<VkPipelineBindPoint t_bindPoint>
 struct BindDescriptorSetsCommand
 {
 	VkPipelineLayout m_pipelineLayout;
 	VkDescriptorSet m_descriptorSets[gaia_max_bind_group_count];
 	uint32_t m_descriptorSetCount;
-	VkPipelineBindPoint m_bindPoint;
 	void execute(VkCommandBuffer commandBuffer)
 	{
 		if (m_descriptorSetCount)
 		{
 			vkCmdBindDescriptorSets(
 				commandBuffer,
-				m_bindPoint,
+				t_bindPoint,
 				m_pipelineLayout,
 				0,
 				m_descriptorSetCount,
@@ -116,8 +146,7 @@ struct BeginRenderingCommand
 {
 	VkRenderingInfo m_renderingInfo;
 	VkRenderingAttachmentInfo m_colorAttachmentInfos[gaia_max_color_attment_count];
-	VkRenderingAttachmentInfo m_depthAttachment;
-	VkRenderingAttachmentInfo m_stencilAttachment;
+	VkRenderingAttachmentInfo m_depthStencilAttachmentInfo;
 public:
 	BeginRenderingCommand()
 	{
@@ -130,8 +159,8 @@ public:
 		m_renderingInfo.viewMask = 0;
 		m_renderingInfo.colorAttachmentCount = 0;
 		m_renderingInfo.pColorAttachments = m_colorAttachmentInfos;
-		m_renderingInfo.pDepthAttachment = &m_depthAttachment;
-		m_renderingInfo.pStencilAttachment = &m_stencilAttachment;
+		m_renderingInfo.pDepthAttachment = &m_depthStencilAttachmentInfo;
+		m_renderingInfo.pStencilAttachment = &m_depthStencilAttachmentInfo;
 		for (uint32_t i = 0; i < gaia_max_color_attment_count; ++i)
 		{
 			m_colorAttachmentInfos[i].sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
@@ -144,25 +173,15 @@ public:
 			m_colorAttachmentInfos[i].loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 			m_colorAttachmentInfos[i].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 		}
-		m_depthAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-		m_depthAttachment.pNext = nullptr;
-		m_depthAttachment.imageView = VK_NULL_HANDLE;
-		m_depthAttachment.imageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		m_depthAttachment.resolveMode = VK_RESOLVE_MODE_NONE;
-		m_depthAttachment.resolveImageView = VK_NULL_HANDLE;
-		m_depthAttachment.resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		m_depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		m_depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-
-		m_stencilAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-		m_stencilAttachment.pNext = nullptr;
-		m_stencilAttachment.imageView = VK_NULL_HANDLE;
-		m_stencilAttachment.imageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		m_stencilAttachment.resolveMode = VK_RESOLVE_MODE_NONE;
-		m_stencilAttachment.resolveImageView = VK_NULL_HANDLE;
-		m_stencilAttachment.resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		m_stencilAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		m_stencilAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		m_depthStencilAttachmentInfo.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+		m_depthStencilAttachmentInfo.pNext = nullptr;
+		m_depthStencilAttachmentInfo.imageView = VK_NULL_HANDLE;
+		m_depthStencilAttachmentInfo.imageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		m_depthStencilAttachmentInfo.resolveMode = VK_RESOLVE_MODE_NONE;
+		m_depthStencilAttachmentInfo.resolveImageView = VK_NULL_HANDLE;
+		m_depthStencilAttachmentInfo.resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		m_depthStencilAttachmentInfo.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		m_depthStencilAttachmentInfo.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 	}
 	void execute(VkCommandBuffer commandBuffer)
 	{

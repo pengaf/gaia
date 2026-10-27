@@ -2,28 +2,12 @@
 #include "render_graph.h"
 #include "compiled_render_graph.h"
 #include "pafcore/flat_set.h"
+#include "pafcore/hash.h"
 #include <unordered_map>
 #include <queue>
 #include <algorithm>
 
 BEGIN_GAIA
-
-inline uint64_t fnv1a_64(const uint8_t* data, size_t len, uint64_t hash = 0xcbf29ce484222325ull)
-{
-	const uint64_t fnv64_prime = 0x00000100000001b3ull;
-	for (size_t i = 0; i < len; ++i)
-	{
-		hash ^= data[i];
-		hash *= fnv64_prime;
-	}
-	return hash;
-}
-
-template<typename T>
-inline uint64_t fnv1a_64(const T& value, uint64_t hash = 0xcbf29ce484222325ull)
-{
-	return fnv1a_64(reinterpret_cast<const uint8_t*>(&value), sizeof(T), hash);
-}
 
 namespace
 {
@@ -95,7 +79,7 @@ namespace
 					RenderGraphCompiler::DiagnosticItem error;
 					error.code = RenderGraphCompiler::DiagnosticCode::error_external_resource_null;
 					error.resource = resourceIndex;
-					diagnosticInfo.errors.push_back(error);
+					diagnosticInfo.addError(error);
 					continue;
 				}
 				auto it = externalResourceMap.find(realResource);
@@ -104,7 +88,7 @@ namespace
 					RenderGraphCompiler::DiagnosticItem error;
 					error.code = RenderGraphCompiler::DiagnosticCode::error_duplicate_external_resource;
 					error.resource = resourceIndex;
-					diagnosticInfo.errors.push_back(error);
+					diagnosticInfo.addError(error);
 				}
 				else
 				{
@@ -132,7 +116,7 @@ namespace
 					error.code = RenderGraphCompiler::DiagnosticCode::error_resource_out_of_range;
 					error.resource = resource;
 					error.pass = passIndex;
-					diagnosticInfo.errors.push_back(error);
+					diagnosticInfo.addError(error);
 					continue;
 				}
 				if (checkedResources.find(resource) != checkedResources.end())
@@ -141,7 +125,7 @@ namespace
 					error.code = RenderGraphCompiler::DiagnosticCode::error_duplicate_resource_in_pass;
 					error.resource = resource;
 					error.pass = passIndex;
-					diagnosticInfo.errors.push_back(error);
+					diagnosticInfo.addError(error);
 				}
 				else
 				{
@@ -156,7 +140,7 @@ namespace
 					error.code = RenderGraphCompiler::DiagnosticCode::error_resource_binding_mismatch;
 					error.resource = resource;
 					error.pass = passIndex;
-					diagnosticInfo.errors.push_back(error);
+					diagnosticInfo.addError(error);
 				}
 				if (binding->isWrite())
 				{
@@ -171,7 +155,7 @@ namespace
 						error.code = RenderGraphCompiler::DiagnosticCode::error_resource_read_before_write;
 						error.resource = resource;
 						error.pass = passIndex;
-						diagnosticInfo.errors.push_back(error);
+						diagnosticInfo.addError(error);
 					}
 					resourceUsages[resource].markRead(passIndex);
 				}				
@@ -189,7 +173,7 @@ namespace
 					RenderGraphCompiler::DiagnosticItem warning;
 					warning.code = RenderGraphCompiler::DiagnosticCode::warning_resource_not_written;
 					warning.resource = resource;
-					diagnosticInfo.warnings.push_back(warning);
+					diagnosticInfo.addWarning(warning);
 				}
 			}
 			if (!resourceUsages[resource].isRead)
@@ -199,7 +183,7 @@ namespace
 					RenderGraphCompiler::DiagnosticItem warning;
 					warning.code = RenderGraphCompiler::DiagnosticCode::warning_resource_not_read;
 					warning.resource = resource;
-					diagnosticInfo.warnings.push_back(warning);
+					diagnosticInfo.addWarning(warning);
 				}
 			}
 		}
@@ -216,7 +200,7 @@ namespace
 		{
 			RenderGraphCompiler::DiagnosticItem error;
 			error.code = RenderGraphCompiler::DiagnosticCode::error_output_resource_not_marked;
-			diagnosticInfo.errors.push_back(error);
+			diagnosticInfo.addError(error);
 		}
 		for (uint32_t i = 0; i < outputResourceCount; ++i)
 		{
@@ -226,7 +210,7 @@ namespace
 				RenderGraphCompiler::DiagnosticItem error;
 				error.code = RenderGraphCompiler::DiagnosticCode::error_output_resource_out_of_range;
 				error.resource = resource;
-				diagnosticInfo.errors.push_back(error);
+				diagnosticInfo.addError(error);
 			}
 			else
 			{
@@ -235,8 +219,107 @@ namespace
 					RenderGraphCompiler::DiagnosticItem error;
 					error.code = RenderGraphCompiler::DiagnosticCode::error_output_resource_not_written;
 					error.resource = resource;
-					diagnosticInfo.errors.push_back(error);
+					diagnosticInfo.addError(error);
 				}
+			}
+		}
+	}
+
+	void CheckPasses(
+		RenderGraphCompiler::DiagnosticInfo& diagnosticInfo,
+		const RenderGraph* renderGraph)
+	{
+		uint32_t passCount = renderGraph->passCount();
+		for (uint32_t passIndex = 0; passIndex < passCount; ++passIndex)
+		{
+			auto* pass = renderGraph->pass(passIndex);
+			switch (pass->kind())
+			{
+			case RenderPassKind::scene_pass: {
+				auto* scenePass = static_cast<RenderGraph::ScenePass*>(pass);
+				if (scenePass->rtvs().empty() && scenePass->dsv().resource == RenderGraphCompiler::invalid_resource)
+				{
+					RenderGraphCompiler::DiagnosticItem error;
+					error.code = RenderGraphCompiler::DiagnosticCode::error_scene_pass_no_output;
+					error.pass = passIndex;
+					diagnosticInfo.addError(error);
+				}
+				break;}
+			case RenderPassKind::image_pass: {
+				auto* imagePass = static_cast<RenderGraph::ImagePass*>(pass);
+				if (!imagePass->pipeline())
+				{
+					RenderGraphCompiler::DiagnosticItem error;
+					error.code = RenderGraphCompiler::DiagnosticCode::error_image_pass_no_pipeline;
+					error.pass = passIndex;
+					diagnosticInfo.addError(error);
+				}
+				if (imagePass->rtvs().empty())
+				{
+					RenderGraphCompiler::DiagnosticItem error;
+					error.code = RenderGraphCompiler::DiagnosticCode::error_image_pass_no_rtv;
+					error.pass = passIndex;
+					diagnosticInfo.addError(error);
+				}
+				if (imagePass->srvs().empty())
+				{
+					RenderGraphCompiler::DiagnosticItem warning;
+					warning.code = RenderGraphCompiler::DiagnosticCode::warning_image_pass_no_srv;
+					warning.pass = passIndex;
+					diagnosticInfo.addWarning(warning);
+				}
+				break;}
+			case RenderPassKind::compute_pass: {
+				auto* computePass = static_cast<RenderGraph::ComputePass*>(pass);
+				if (!computePass->pipeline())
+				{
+					RenderGraphCompiler::DiagnosticItem error;
+					error.code = RenderGraphCompiler::DiagnosticCode::error_compute_pass_no_pipeline;
+					error.pass = passIndex;
+					diagnosticInfo.addError(error);
+				}
+				if (computePass->uavs().empty())
+				{
+					RenderGraphCompiler::DiagnosticItem error;
+					error.code = RenderGraphCompiler::DiagnosticCode::error_compute_pass_no_uav;
+					error.pass = passIndex;
+					diagnosticInfo.addError(error);
+				}
+				if (computePass->srvs().empty())
+				{
+					RenderGraphCompiler::DiagnosticItem warning;
+					warning.code = RenderGraphCompiler::DiagnosticCode::warning_compute_pass_no_srv;
+					warning.pass = passIndex;
+					diagnosticInfo.addWarning(warning);
+				}
+				break;}
+			case RenderPassKind::ray_tracing_pass: {
+				auto* rayTracingPass = static_cast<RenderGraph::RayTracingPass*>(pass);
+				if (!rayTracingPass->pipeline())
+				{
+					RenderGraphCompiler::DiagnosticItem error;
+					error.code = RenderGraphCompiler::DiagnosticCode::error_ray_tracing_pass_no_pipeline;
+					error.pass = passIndex;
+					diagnosticInfo.addError(error);
+				}
+				if (rayTracingPass->uavs().empty())
+				{
+					RenderGraphCompiler::DiagnosticItem error;
+					error.code = RenderGraphCompiler::DiagnosticCode::error_ray_tracing_pass_no_uav;
+					error.pass = passIndex;
+					diagnosticInfo.addError(error);
+				}
+				if (rayTracingPass->srvs().empty())
+				{
+					RenderGraphCompiler::DiagnosticItem warning;
+					warning.code = RenderGraphCompiler::DiagnosticCode::warning_ray_tracing_pass_no_srv;
+					warning.pass = passIndex;
+					diagnosticInfo.addWarning(warning);
+				}
+				break;}
+			default:
+				GAIA_ASSERT(false && "Unknown pass kind");
+				break;
 			}
 		}
 	}
@@ -315,7 +398,7 @@ namespace
 				RenderGraphCompiler::DiagnosticItem warning;
 				warning.code = RenderGraphCompiler::DiagnosticCode::warning_pass_no_contribution;
 				warning.pass = passIndex;
-				diagnosticInfo.warnings.push_back(warning);
+				diagnosticInfo.addWarning(warning);
 			}
 		}
 	}
@@ -324,9 +407,9 @@ namespace
 	{
 		size_t operator()(const BufferDesc& desc) const
 		{
-			uint64_t h = fnv1a_64(desc.size);
-			h = fnv1a_64(desc.bufferUsage, h);
-			h = fnv1a_64(desc.cpuAccess, h);
+			uint64_t h = pafcore::fnv1a_64(desc.size);
+			h = pafcore::fnv1a_64(desc.bufferUsage, h);
+			h = pafcore::fnv1a_64(desc.cpuAccess, h);
 			return (size_t)h;
 		}
 	};
@@ -335,15 +418,15 @@ namespace
 	{
 		size_t operator()(const TextureDesc& desc) const
 		{
-			uint64_t h = fnv1a_64(desc.width);
-			h = fnv1a_64(desc.height, h);
-			h = fnv1a_64(desc.depth, h);
-			h = fnv1a_64(desc.mipLevels, h);
-			h = fnv1a_64(desc.arrayLayers, h);
-			h = fnv1a_64(desc.dimension, h);
-			h = fnv1a_64(desc.format, h);
-			h = fnv1a_64(desc.textureUsage, h);
-			h = fnv1a_64(desc.cpuAccess, h);
+			uint64_t h = pafcore::fnv1a_64(desc.width);
+			h = pafcore::fnv1a_64(desc.height, h);
+			h = pafcore::fnv1a_64(desc.depth, h);
+			h = pafcore::fnv1a_64(desc.mipLevels, h);
+			h = pafcore::fnv1a_64(desc.arrayLayers, h);
+			h = pafcore::fnv1a_64(desc.dimension, h);
+			h = pafcore::fnv1a_64(desc.format, h);
+			h = pafcore::fnv1a_64(desc.textureUsage, h);
+			h = pafcore::fnv1a_64(desc.cpuAccess, h);
 			return (size_t)h;
 		}
 	};
@@ -489,6 +572,7 @@ namespace
 
 
 	void BuildCompiledPasses(
+		RenderGraphCompiler::DiagnosticInfo& diagnosticInfo,
 		CompiledRenderGraph* compiledRenderGraph,
 		const RenderGraph* renderGraph,
 		const std::vector<uint32_t>& resourceToSlot)
@@ -520,6 +604,63 @@ namespace
 				lastBinding[resource] = binding;
 			}
 		}
+
+		for (uint32_t passIndex = 0; passIndex < passCount; ++passIndex)
+		{
+			auto* pass = compiledRenderGraph->pass(passIndex);
+			if (pass->kind() == RenderPassKind::scene_pass)
+			{
+				auto* scenePass = static_cast<CompiledRenderGraph::ScenePass*>(pass);
+				if(scenePass->rtvs().empty() && scenePass->dsv().resource == invalid_resource)
+				{
+					RenderGraphCompiler::DiagnosticItem error;
+					error.code = RenderGraphCompiler::DiagnosticCode::error_scene_pass_no_output;
+					error.resource = invalid_resource;
+					error.pass = passIndex;
+					diagnosticInfo.addError(error);
+				}
+			}
+			else if (pass->kind() == RenderPassKind::image_pass)
+			{
+				auto* imagePass = static_cast<CompiledRenderGraph::ImagePass*>(pass);
+				if (imagePass->rtvs().empty())
+				{
+					RenderGraphCompiler::DiagnosticItem error;
+					error.code = RenderGraphCompiler::DiagnosticCode::error_image_pass_no_rtv;
+					error.resource = invalid_resource;
+					error.pass = passIndex;
+					diagnosticInfo.addError(error);
+				}
+				if (imagePass->srvs().empty())
+				{
+					RenderGraphCompiler::DiagnosticItem warning;
+					warning.code = RenderGraphCompiler::DiagnosticCode::warning_image_pass_no_srv;
+					warning.resource = invalid_resource;
+					warning.pass = passIndex;
+					diagnosticInfo.addWarning(warning);
+				}
+			}
+			else if (pass->kind() == RenderPassKind::compute_pass)
+			{
+				auto* computePass = static_cast<CompiledRenderGraph::ComputePass*>(pass);
+				if (computePass->uavs().empty())
+				{
+					RenderGraphCompiler::DiagnosticItem error;
+					error.code = RenderGraphCompiler::DiagnosticCode::error_compute_pass_no_uav;
+					error.resource = invalid_resource;
+					error.pass = passIndex;
+					diagnosticInfo.addError(error);
+				}
+				if (computePass->srvs().empty())
+				{
+					RenderGraphCompiler::DiagnosticItem warning;
+					warning.code = RenderGraphCompiler::DiagnosticCode::warning_compute_pass_no_srv;
+					warning.resource = invalid_resource;
+					warning.pass = passIndex;
+					diagnosticInfo.addWarning(warning);
+				}
+			}
+		}
 	}
 }
 
@@ -532,7 +673,7 @@ RenderGraphCompiler::DiagnosticInfo RenderGraphCompiler::compile(CompiledRenderG
 
 	std::vector<ResourceUsage> resourceUsages = CheckResources(diagnosticInfo, renderGraph);
 	CheckOutputResources(diagnosticInfo, renderGraph, resourceUsages);
-
+	CheckPasses(diagnosticInfo, renderGraph);
 	if (!diagnosticInfo.errors.empty())
 	{
 		return diagnosticInfo;
@@ -540,7 +681,8 @@ RenderGraphCompiler::DiagnosticInfo RenderGraphCompiler::compile(CompiledRenderG
 
 	std::vector<uint32_t> resourceToSlot = BuildCompiledResources(compiledRenderGraph, renderGraph, resourceUsages);
 
-	BuildCompiledPasses(compiledRenderGraph, renderGraph, resourceToSlot);
+	BuildCompiledPasses(diagnosticInfo, compiledRenderGraph, renderGraph, resourceToSlot);
+	CheckPassContribution(diagnosticInfo, renderGraph, resourceUsages);
 
 	return diagnosticInfo;
 }

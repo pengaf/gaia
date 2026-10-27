@@ -46,5 +46,7 @@ using Vector4f = Vector4<float>;
 using Vector2d = Vector2<double>;
 using Vector3d = Vector3<double>;
 using Vector4d = Vector4<double>;
+using Vector2i = Vector2<int32_t>;
+using Vector2u = Vector2<uint32_t>;
 
 END_GAIA

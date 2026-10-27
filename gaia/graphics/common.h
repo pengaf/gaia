@@ -8,8 +8,15 @@ BEGIN_GAIA
 
 const uint32_t gaia_max_bind_group_count = 4; //
 const uint32_t gaia_max_color_attment_count = 8; //
+
+const uint32_t gaia_max_uav_image_count = 8;
+const uint32_t gaia_max_uav_buffer_count = 8;
+const uint32_t gaia_max_uav_count = 8;
+
 const uint32_t gaia_max_vertex_buffer_bind_count = 8; //webgpu 8, d3d12 32, vulkan 16, metal 31
 const uint32_t gaia_max_swapchain_image_count = 4;
+
+
 
 enum class ResourceState
 {
@@ -146,6 +153,16 @@ enum class TextureFormat
     astc_12x12_unorm,
     astc_12x12_unorm_srgb,
     count,
+};
+
+struct Color
+{
+	float r;
+	float g;
+	float b;
+	float a;
+public:
+	bool operator==(const Color& other) const = default;
 };
 
 struct TextureSubRange
@@ -390,25 +407,44 @@ enum class TextureViewDimension : uint8_t
     texture_view_cube_array,
 };
 
+//struct RenderTargetViewDesc
+//{
+//    TextureViewDimension dimension = TextureViewDimension::texture_view_2d;
+//    TextureFormat format = TextureFormat::unknown;
+//    uint32_t baseMipLevel = 0;
+//    uint32_t levelCount = 1;
+//    uint32_t baseArrayLayer = 0;
+//    uint32_t layerCount = 1;
+//    bool clear = false;
+//    Color clearColor = { 0.0f, 0.0f, 0.0f, 0.0f };
+//};
 struct RenderTargetViewDesc
 {
-    TextureViewDimension dimension;
-    TextureFormat format;
-    uint32_t baseMipLevel;
-    uint32_t levelCount;
-    uint32_t baseArrayLayer;
-    uint32_t layerCount;
+    TextureViewDimension dimension = TextureViewDimension::texture_view_2d;
+    TextureFormat format = TextureFormat::unknown;
+    uint32_t mipLevel = 0;
+    uint32_t baseArrayLayer = 0;
+    uint32_t layerCount = 1;
+    bool clear = false;
+    Color clearColor = {0,0,0,0};
+public:
+    bool operator==(const RenderTargetViewDesc& other) const = default;
 };
 
 struct DepthStencilViewDesc
 {
-    TextureViewDimension dimension;
-    TextureFormat format;
-    uint32_t baseMipLevel;
-    uint32_t levelCount;
-    uint32_t baseArrayLayer;
-    uint32_t layerCount;
-	bool readOnly;
+    TextureViewDimension dimension = TextureViewDimension::texture_view_2d;
+    TextureFormat format = TextureFormat::unknown;
+    uint32_t mipLevel = 0;
+    uint32_t baseArrayLayer = 0;
+    uint32_t layerCount = 1;
+	bool readOnly = false;
+    bool clearDepth = false;
+    bool clearStencil = false;
+    uint8_t clearStencilValue = 0;
+    float clearDepthValue = 1.0f;
+public:
+    bool operator==(const DepthStencilViewDesc& other) const = default;
 };
 
 enum class ShaderResourceKind : uint8_t
@@ -423,9 +459,9 @@ struct TextureViewDesc
 	TextureViewDimension dimension;
 	TextureFormat format;
 	uint32_t baseMipLevel;
-	uint32_t mipLevelCount;
+	uint32_t levelCount;
 	uint32_t baseArrayLayer;
-	uint32_t arrayLayerCount;
+	uint32_t layerCount;
 };
 
 struct BufferViewDesc
