@@ -3,6 +3,7 @@
 #include "utility.h"
 #include "../bit_mask_enum.h"
 #include <string>
+#include <vector>
 
 BEGIN_GAIA
 
@@ -418,6 +419,20 @@ enum class TextureViewDimension : uint8_t
 //    bool clear = false;
 //    Color clearColor = { 0.0f, 0.0f, 0.0f, 0.0f };
 //};
+
+enum class AttachmentLoadOp : uint8_t
+{
+    dont_care,
+    load,
+    clear,
+};
+
+enum class AttachmentStoreOp : uint8_t
+{
+    dont_care,
+    store,
+};
+
 struct RenderTargetViewDesc
 {
     TextureViewDimension dimension = TextureViewDimension::texture_view_2d;
@@ -425,7 +440,8 @@ struct RenderTargetViewDesc
     uint32_t mipLevel = 0;
     uint32_t baseArrayLayer = 0;
     uint32_t layerCount = 1;
-    bool clear = false;
+    AttachmentLoadOp loadOp = AttachmentLoadOp::dont_care;
+    AttachmentStoreOp storeOp = AttachmentStoreOp::dont_care;
     Color clearColor = {0,0,0,0};
 public:
     bool operator==(const RenderTargetViewDesc& other) const = default;
@@ -438,11 +454,11 @@ struct DepthStencilViewDesc
     uint32_t mipLevel = 0;
     uint32_t baseArrayLayer = 0;
     uint32_t layerCount = 1;
-	bool readOnly = false;
-    bool clearDepth = false;
-    bool clearStencil = false;
-    uint8_t clearStencilValue = 0;
+    AttachmentLoadOp loadOp = AttachmentLoadOp::dont_care;
+    AttachmentStoreOp storeOp = AttachmentStoreOp::dont_care;
+    bool readOnly = false;
     float clearDepthValue = 1.0f;
+    uint32_t clearStencilValue = 0;
 public:
     bool operator==(const DepthStencilViewDesc& other) const = default;
 };
@@ -631,14 +647,21 @@ struct ComputePipelineDesc
 	std::string computeEntryPoint;
 };
 
+struct RayTracingShaderModule
+{
+    std::string shaderCode;
+    std::vector<std::string> rayGenerationEntryPoints;
+    std::vector<std::string> missEntryPoints;
+    std::vector<std::string> closestHitEntryPoints;
+    std::vector<std::string> anyHitEntryPoints;
+    std::vector<std::string> intersectionEntryPoints;
+    std::vector<std::string> callableEntryPoints;
+};
+
 struct RayTracingPipelineDesc
 {
-	std::string shaderCode;
-	std::string rayGenerationEntryPoint;
-	std::string missEntryPoint;
-	std::string closestHitEntryPoint;
-	std::string anyHitEntryPoint;
-	std::string intersectionEntryPoint;
+    std::vector<RayTracingShaderModule> shaderModules;
+    uint32_t maxRecursionDepth = 1;
 };
 
 struct MeshShaderPipelineDesc
@@ -646,11 +669,11 @@ struct MeshShaderPipelineDesc
 	std::string shaderCode;
 	std::string meshEntryPoint;
 	std::string amplificationEntryPoint;
+    std::string fragmentEntryPoint;
     RasterizerStateDesc rasterizerState;
     DepthStencilDesc depthStencilState;
     BlendStateDesc blendState;
 };
-
 
 enum class DrawMethod
 {

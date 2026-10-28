@@ -28,11 +28,11 @@ public:
 
 struct DrawIndexedCommand
 {
-	uint32_t m_indexCount;
-	uint32_t m_instanceCount;
-	uint32_t m_firstIndex;
-	int32_t m_vertexOffset;
-	uint32_t m_firstInstance;
+	uint32_t m_indexCount = 0;
+	uint32_t m_instanceCount = 0;
+	uint32_t m_firstIndex = 0;
+	int32_t m_vertexOffset = 0;
+	uint32_t m_firstInstance = 0;
 	void execute(VkCommandBuffer commandBuffer)
 	{
 		vkCmdDrawIndexed(commandBuffer, m_indexCount, m_instanceCount, m_firstIndex, m_vertexOffset, m_firstInstance);
@@ -112,7 +112,7 @@ struct BarrierCommandSet
 template<VkPipelineBindPoint t_bindPoint>
 struct BindPipelineCommand
 {
-	VkPipeline m_pipeline;
+	VkPipeline m_pipeline = VK_NULL_HANDLE;
 	void execute(VkCommandBuffer commandBuffer)
 	{
 		vkCmdBindPipeline(commandBuffer, t_bindPoint, m_pipeline);
@@ -122,9 +122,9 @@ struct BindPipelineCommand
 template<VkPipelineBindPoint t_bindPoint>
 struct BindDescriptorSetsCommand
 {
-	VkPipelineLayout m_pipelineLayout;
-	VkDescriptorSet m_descriptorSets[gaia_max_bind_group_count];
-	uint32_t m_descriptorSetCount;
+	VkPipelineLayout m_pipelineLayout = VK_NULL_HANDLE;
+	VkDescriptorSet m_descriptorSets[gaia_max_bind_group_count]{};
+	uint32_t m_descriptorSetCount = 0;
 	void execute(VkCommandBuffer commandBuffer)
 	{
 		if (m_descriptorSetCount)
@@ -144,9 +144,9 @@ struct BindDescriptorSetsCommand
 
 struct BeginRenderingCommand
 {
-	VkRenderingInfo m_renderingInfo;
-	VkRenderingAttachmentInfo m_colorAttachmentInfos[gaia_max_color_attment_count];
-	VkRenderingAttachmentInfo m_depthStencilAttachmentInfo;
+	VkRenderingInfo m_renderingInfo{};
+	VkRenderingAttachmentInfo m_colorAttachmentInfos[gaia_max_color_attment_count]{};
+	VkRenderingAttachmentInfo m_depthStencilAttachmentInfo{};
 public:
 	BeginRenderingCommand()
 	{
@@ -176,7 +176,7 @@ public:
 		m_depthStencilAttachmentInfo.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
 		m_depthStencilAttachmentInfo.pNext = nullptr;
 		m_depthStencilAttachmentInfo.imageView = VK_NULL_HANDLE;
-		m_depthStencilAttachmentInfo.imageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		m_depthStencilAttachmentInfo.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 		m_depthStencilAttachmentInfo.resolveMode = VK_RESOLVE_MODE_NONE;
 		m_depthStencilAttachmentInfo.resolveImageView = VK_NULL_HANDLE;
 		m_depthStencilAttachmentInfo.resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED;

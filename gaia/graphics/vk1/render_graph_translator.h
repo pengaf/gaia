@@ -34,6 +34,7 @@ public:
 
 		error_invalid_graphics_pipeline,
 		error_invalid_compute_pipeline,
+		error_invalid_ray_tracing_pipeline,
 
 		end_error,
 		begin_warning,

@@ -74,9 +74,34 @@ public:
 		return m_pipelineLayout;
 	}
 private:
-	VkPipelineShaderStageCreateInfo m_stage;
+	//VkPipelineShaderStageCreateInfo m_stage;
 	VkPipelineLayout m_pipelineLayout;
 	VkPipeline m_pipeline;
+};
+
+class RayTracingPipeline
+{
+public:
+	RayTracingPipeline();
+	~RayTracingPipeline();
+public:
+	VkPipeline getPipeline() const
+	{
+		return m_pipeline;
+	}
+	VkPipelineLayout getPipelineLayout() const
+	{
+		return m_pipelineLayout;
+	}
+private:
+	VkPipelineLayout m_pipelineLayout = VK_NULL_HANDLE;
+	VkPipeline m_pipeline;
+	//VkBuffer m_sbtBuffer = VK_NULL_HANDLE;
+	//VmaAllocation m_sbtAllocation = VK_NULL_HANDLE;
+	//VkStridedDeviceAddressRegionKHR m_raygenRegion{};
+	//VkStridedDeviceAddressRegionKHR m_missRegion{};
+	//VkStridedDeviceAddressRegionKHR m_hitRegion{};
+	//VkStridedDeviceAddressRegionKHR m_callableRegion{};
 };
 
 END_GAIA_VK1

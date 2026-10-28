@@ -436,6 +436,10 @@ namespace
 			if (invalid_resource_view != dsvInfo.viewIndex)
 			{
 				dstScenePass->m_beginRendering.m_depthStencilAttachmentInfo.imageView = dstRenderGraph->m_imageViews[dsvInfo.viewIndex];
+				dstScenePass->m_beginRendering.m_depthStencilAttachmentInfo.imageLayout = dsv.usageDesc.readOnly ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+				dstScenePass->m_beginRendering.m_depthStencilAttachmentInfo.loadOp = MappingAttchmentLoadOp(dsv.usageDesc.loadOp);
+				dstScenePass->m_beginRendering.m_depthStencilAttachmentInfo.storeOp = MappingAttchmentStoreOp(dsv.usageDesc.storeOp);
+
 				VkImageAspectFlags aspectMask = MapTextureAspect(dsv.usageDesc.format);
 				if (0 == (aspectMask & VK_IMAGE_ASPECT_DEPTH_BIT))
 				{
@@ -565,8 +569,37 @@ namespace
 			diagnosticInfo.addError(error);
 		}
 		dstComputePass->m_bindPipeline.m_pipeline = pipeline;
-		dstComputePass->m_bindDescriptorSets.m_pipelineLayout = pipelineLayout;	
+		dstComputePass->m_bindDescriptorSets.m_pipelineLayout = pipelineLayout;
 		dstComputePass->m_dispatch.initialize(srcComputePass->dispatchX(), srcComputePass->dispatchY(), srcComputePass->dispatchZ());
+	}
+
+
+	void BuildRayTracingPass(
+		RenderGraphTranslator::DiagnosticInfo& diagnosticInfo,
+		uint32_t passIndex,
+		ExecutableRenderGraph::RayTracingPass* dstRayTracingPass,
+		const CompiledRenderGraph::RayTracingPass* srcRayTracingPass,
+		ExecutableRenderGraph* dstRenderGraph,
+		const CompiledRenderGraph* srcRenderGraph,
+		const ResourceMap& resourceMap,
+		ResourceViewMap& resourceViewMap,
+		RenderSystem* renderSystem)
+	{
+		//GAIA_ASSERT(srcRayTracingPass->uavs().size() <= gaia_max_uav_count);
+		//uint32_t uavCount = srcRayTracingPass->uavs().size();
+		const RayTracingPipeline* rayTracingPipeline = srcRayTracingPass->pipeline();
+		VkPipeline pipeline = rayTracingPipeline->getPipeline();
+		VkPipelineLayout pipelineLayout = rayTracingPipeline->getPipelineLayout();
+		if (VK_NULL_HANDLE == pipeline || VK_NULL_HANDLE == pipelineLayout)
+		{
+			RenderGraphTranslator::DiagnosticItem error;
+			error.code = RenderGraphTranslator::DiagnosticCode::error_invalid_ray_tracing_pipeline;
+			error.pass = passIndex;
+			diagnosticInfo.addError(error);
+		}
+		dstRayTracingPass->m_bindPipeline.m_pipeline = pipeline;
+		dstRayTracingPass->m_bindDescriptorSets.m_pipelineLayout = pipelineLayout;
+		//dstRayTracingPass->m_traceRays;
 	}
 
 	void BuildPasses(
@@ -597,10 +630,17 @@ namespace
 					dstRenderGraph, srcRenderGraph, resourceMap, resourceViewMap, renderSystem);
 			}
 			break;
-			case RenderPassKind::compute_pass: 
+			case RenderPassKind::compute_pass:
 			{
 				auto* dstComputePass = dstRenderGraph->addComputePass(srcPass->name());
 				BuildComputePass(diagnosticInfo, passIndex, dstComputePass, static_cast<const CompiledRenderGraph::ComputePass*>(srcPass),
+					dstRenderGraph, srcRenderGraph, resourceMap, resourceViewMap, renderSystem);
+			}
+			break;
+			case RenderPassKind::ray_tracing_pass:
+			{
+				auto* dstRayTracingPass = dstRenderGraph->addRayTracingPass(srcPass->name());
+				BuildRayTracingPass(diagnosticInfo, passIndex, dstRayTracingPass, static_cast<const CompiledRenderGraph::RayTracingPass*>(srcPass),
 					dstRenderGraph, srcRenderGraph, resourceMap, resourceViewMap, renderSystem);
 			}
 			break;
@@ -608,7 +648,6 @@ namespace
 		}
 	}
 }
-
 
 RenderGraphTranslator::DiagnosticInfo RenderGraphTranslator::translate(ExecutableRenderGraph* executableRenderGraph, const CompiledRenderGraph* compiledRenderGraph, RenderSystem* renderSystem)
 {
@@ -620,7 +659,7 @@ RenderGraphTranslator::DiagnosticInfo RenderGraphTranslator::translate(Executabl
 		return diagnosticInfo;
 	}
 	ResourceViewMap resourceViewMap;
-
+	BuildPasses(diagnosticInfo, executableRenderGraph, compiledRenderGraph, resourceMap, resourceViewMap, renderSystem);
 	return diagnosticInfo;
 }
 

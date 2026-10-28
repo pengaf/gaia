@@ -20,4 +20,6 @@ void MapRenderTargetViewDesc(VkImageViewCreateInfo& dst, const RenderTargetViewD
 void MapDepthStencilViewDesc(VkImageViewCreateInfo& dst, const DepthStencilViewDesc& src, VkImage image);
 
 
+MappingAttchmentLoadOp()
+
 END_GAIA_VK1

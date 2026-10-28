@@ -99,6 +99,7 @@ public:
 	ScenePass* addScenePass(std::string_view name);
 	ImagePass* addImagePass(std::string_view name);
 	ComputePass* addComputePass(std::string_view name);
+	RayTracingPass* addRayTracingPass(std::string_view name);
 public:
 	uint32_t passCount()const
 	{

@@ -46,4 +46,9 @@ ExecutableRenderGraph::ComputePass* ExecutableRenderGraph::addComputePass(std::s
 	return addPass_<ComputePass>(name);
 }
 
+ExecutableRenderGraph::RayTracingPass* ExecutableRenderGraph::addRayTracingPass(std::string_view name)
+{
+	return addPass_<RayTracingPass>(name);
+}
+
 END_GAIA_VK1
