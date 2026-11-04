@@ -19,7 +19,8 @@ void MapTextureState(VkAccessFlags& accessFlags, VkImageLayout& imageLayout, Res
 void MapRenderTargetViewDesc(VkImageViewCreateInfo& dst, const RenderTargetViewDesc& src, VkImage image);
 void MapDepthStencilViewDesc(VkImageViewCreateInfo& dst, const DepthStencilViewDesc& src, VkImage image);
 
+VkAttachmentLoadOp MappingAttchmentLoadOp(AttachmentLoadOp loadOp);
+VkAttachmentStoreOp MappingAttchmentStoreOp(AttachmentStoreOp storeOp);
 
-MappingAttchmentLoadOp()
 
 END_GAIA_VK1

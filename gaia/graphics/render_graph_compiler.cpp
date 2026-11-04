@@ -237,7 +237,7 @@ namespace
 			{
 			case RenderPassKind::scene_pass: {
 				auto* scenePass = static_cast<RenderGraph::ScenePass*>(pass);
-				if (scenePass->rtvs().empty() && scenePass->dsv().resource == RenderGraphCompiler::invalid_resource)
+				if (scenePass->cavs().empty() && scenePass->dsav().dsv.resource == RenderGraphCompiler::invalid_resource)
 				{
 					RenderGraphCompiler::DiagnosticItem error;
 					error.code = RenderGraphCompiler::DiagnosticCode::error_scene_pass_no_output;
@@ -611,7 +611,7 @@ namespace
 			if (pass->kind() == RenderPassKind::scene_pass)
 			{
 				auto* scenePass = static_cast<CompiledRenderGraph::ScenePass*>(pass);
-				if(scenePass->rtvs().empty() && scenePass->dsv().resource == invalid_resource)
+				if(scenePass->cavs().empty() && scenePass->dsav().dsv.resource == invalid_resource)
 				{
 					RenderGraphCompiler::DiagnosticItem error;
 					error.code = RenderGraphCompiler::DiagnosticCode::error_scene_pass_no_output;

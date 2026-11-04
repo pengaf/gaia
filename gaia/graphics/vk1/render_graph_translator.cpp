@@ -43,7 +43,8 @@ namespace
 			h = pafcore::fnv1a_64(key.desc.mipLevel, h);
 			h = pafcore::fnv1a_64(key.desc.baseArrayLayer, h);
 			h = pafcore::fnv1a_64(key.desc.layerCount, h);
-			h = pafcore::fnv1a_64(key.desc.clear, h);
+			h = pafcore::fnv1a_64(key.desc.loadOp, h);
+			h = pafcore::fnv1a_64(key.desc.storeOp, h);
 			h = pafcore::fnv1a_64(key.desc.clearColor.r, h);
 			h = pafcore::fnv1a_64(key.desc.clearColor.g, h);
 			h = pafcore::fnv1a_64(key.desc.clearColor.b, h);
@@ -69,11 +70,33 @@ namespace
 			h = pafcore::fnv1a_64(key.desc.mipLevel, h);
 			h = pafcore::fnv1a_64(key.desc.baseArrayLayer, h);
 			h = pafcore::fnv1a_64(key.desc.layerCount, h);
+			h = pafcore::fnv1a_64(key.desc.loadOp, h);
+			h = pafcore::fnv1a_64(key.desc.storeOp, h);
 			h = pafcore::fnv1a_64(key.desc.readOnly, h);
-			h = pafcore::fnv1a_64(key.desc.clearDepth, h);
-			h = pafcore::fnv1a_64(key.desc.clearStencil, h);
 			h = pafcore::fnv1a_64(key.desc.clearStencilValue, h);
 			h = pafcore::fnv1a_64(key.desc.clearDepthValue, h);
+			return (size_t)h;
+		}
+	};
+
+	struct MrvKey
+	{
+		VkImage image;
+		MultisampleResolveViewDesc desc;
+		bool operator==(const MrvKey& other) const = default;
+	};
+
+	struct MrvKeyHash
+	{
+		size_t operator()(const MrvKey& key) const
+		{
+			uint64_t h = pafcore::fnv1a_64(key.image);
+			h = pafcore::fnv1a_64(key.desc.dimension, h);
+			h = pafcore::fnv1a_64(key.desc.format, h);
+			h = pafcore::fnv1a_64(key.desc.mipLevel, h);
+			h = pafcore::fnv1a_64(key.desc.baseArrayLayer, h);
+			h = pafcore::fnv1a_64(key.desc.layerCount, h);
+			h = pafcore::fnv1a_64(key.desc.resolveMode, h);
 			return (size_t)h;
 		}
 	};
@@ -137,6 +160,7 @@ namespace
 	{
 		std::unordered_map<RtvKey, RtvInfo, RtvKeyHash> rtvMap;
 		std::unordered_map<DsvKey, DsvInfo, DsvKeyHash> dsvMap;
+		std::unordered_map<MrvKey, uint32_t, MrvKeyHash> mrvMap;
 		std::unordered_map<TextureSrvUavKey, uint32_t, TextureSrvUavKeyHash> textureSrvUavMap;
 		std::unordered_map<TexelBufferSrvUavKey, uint32_t, TexelBufferSrvUavKeyHash> texelBufferSrvMap;
 	};
@@ -290,13 +314,13 @@ namespace
 		{
 			return rtvInfo;
 		}
-		RtvKey rtvKey = { textureInfo.image, rtv.usageDesc };
+		RtvKey rtvKey = { textureInfo.image, rtv.desc };
 		auto it = resourceViewMap.rtvMap.find(rtvKey);
 		if (resourceViewMap.rtvMap.end() == it)
 		{
 			VkDevice device = renderSystem->device();
 			VkImageViewCreateInfo createInfo;
-			MapRenderTargetViewDesc(createInfo, rtv.usageDesc, textureInfo.image);
+			MapRenderTargetViewDesc(createInfo, rtv.desc, textureInfo.image);
 			if (createInfo.subresourceRange.aspectMask != VK_IMAGE_ASPECT_COLOR_BIT)
 			{
 				RenderGraphTranslator::DiagnosticItem error;
@@ -320,8 +344,8 @@ namespace
 			uint32_t viewIndex = dstRenderGraph->m_imageViews.size();
 			dstRenderGraph->m_imageViews.push_back(imageView);
 			rtvInfo.viewIndex = viewIndex;
-			rtvInfo.width = std::max(1u, textureInfo.desc->width >> rtv.usageDesc.mipLevel);
-			rtvInfo.height = std::max(1u, textureInfo.desc->height >> rtv.usageDesc.mipLevel);
+			rtvInfo.width = std::max(1u, textureInfo.desc->width >> rtv.desc.mipLevel);
+			rtvInfo.height = std::max(1u, textureInfo.desc->height >> rtv.desc.mipLevel);
 			resourceViewMap.rtvMap.insert(std::make_pair(rtvKey, rtvInfo));
 			return rtvInfo;
 		}
@@ -348,13 +372,13 @@ namespace
 			return dsvInfo;
 		}
 
-		DsvKey dsvKey = { textureInfo.image, dsv.usageDesc };
+		DsvKey dsvKey = { textureInfo.image, dsv.desc };
 		auto it = resourceViewMap.dsvMap.find(dsvKey);
 		if (resourceViewMap.dsvMap.end() == it)
 		{
 			VkDevice device = renderSystem->device();
 			VkImageViewCreateInfo createInfo;
-			MapDepthStencilViewDesc(createInfo, dsv.usageDesc, textureInfo.image);
+			MapDepthStencilViewDesc(createInfo, dsv.desc, textureInfo.image);
 			if ((createInfo.subresourceRange.aspectMask & (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT)) == 0)
 			{
 				RenderGraphTranslator::DiagnosticItem error;
@@ -378,8 +402,8 @@ namespace
 			uint32_t viewIndex = dstRenderGraph->m_imageViews.size();
 			dstRenderGraph->m_imageViews.push_back(imageView);
 			dsvInfo.viewIndex = viewIndex;
-			dsvInfo.width = std::max(1u, textureInfo.desc->width >> dsv.usageDesc.mipLevel);
-			dsvInfo.height = std::max(1u, textureInfo.desc->height >> dsv.usageDesc.mipLevel);
+			dsvInfo.width = std::max(1u, textureInfo.desc->width >> dsv.desc.mipLevel);
+			dsvInfo.height = std::max(1u, textureInfo.desc->height >> dsv.desc.mipLevel);
 			resourceViewMap.dsvMap.insert(std::make_pair(dsvKey, dsvInfo));
 			return dsvInfo;
 		}
@@ -388,6 +412,64 @@ namespace
 			return it->second;
 		}
 	}
+
+	//uint32_t GetMultisampleResolveView(
+	//	RenderGraphTranslator::DiagnosticInfo& diagnosticInfo,
+	//	uint32_t passIndex,
+	//	const ResourceMap& resourceMap,
+	//	ResourceViewMap& resourceViewMap,
+	//	ExecutableRenderGraph* dstRenderGraph,
+	//	const CompiledRenderGraph* srcRenderGraph,
+	//	const CompiledRenderGraph::MRV& mrv,
+	//	RenderSystem* renderSystem)
+	//{
+	//	DsvInfo dsvInfo;
+	//	TextureInfo textureInfo = GetImageFromResourceIndex(diagnosticInfo, passIndex, resourceMap, dstRenderGraph, srcRenderGraph, dsv.resource);
+	//	if (VK_NULL_HANDLE == textureInfo.image)
+	//	{
+	//		return invalid_resource_view;
+	//	}
+
+	//	MrvKey mvrKey = { textureInfo.image, mrv.desc };
+	//	auto it = resourceViewMap.mrvMap.find(mvrKey);
+	//	if (resourceViewMap.mrvMap.end() == it)
+	//	{
+	//		VkDevice device = renderSystem->device();
+	//		VkImageViewCreateInfo createInfo;
+	//		MapDepthStencilViewDesc(createInfo, dsv.desc, textureInfo.image);
+	//		if ((createInfo.subresourceRange.aspectMask & (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT)) == 0)
+	//		{
+	//			RenderGraphTranslator::DiagnosticItem error;
+	//			error.code = RenderGraphTranslator::DiagnosticCode::error_invalid_dsv_format;
+	//			error.pass = passIndex;
+	//			error.resource = dsv.resource;
+	//			diagnosticInfo.addError(error);
+	//			return dsvInfo;
+	//		}
+	//		VkImageView imageView;
+	//		VkResult result = vkCreateImageView(device, &createInfo, nullptr, &imageView);
+	//		if (VK_SUCCESS != result)
+	//		{
+	//			RenderGraphTranslator::DiagnosticItem error;
+	//			error.code = RenderGraphTranslator::DiagnosticCode::error_create_image_view_failed;
+	//			error.pass = passIndex;
+	//			error.resource = dsv.resource;
+	//			diagnosticInfo.addError(error);
+	//			return dsvInfo;
+	//		}
+	//		uint32_t viewIndex = dstRenderGraph->m_imageViews.size();
+	//		dstRenderGraph->m_imageViews.push_back(imageView);
+	//		dsvInfo.viewIndex = viewIndex;
+	//		dsvInfo.width = std::max(1u, textureInfo.desc->width >> dsv.desc.mipLevel);
+	//		dsvInfo.height = std::max(1u, textureInfo.desc->height >> dsv.desc.mipLevel);
+	//		resourceViewMap.dsvMap.insert(std::make_pair(dsvKey, dsvInfo));
+	//		return dsvInfo;
+	//	}
+	//	else
+	//	{
+	//		return it->second;
+	//	}
+	//}
 
 
 	void BuildScenePass(
@@ -404,8 +486,8 @@ namespace
 		uint32_t renderWidth = UINT32_MAX;
 		uint32_t renderHeight = UINT32_MAX;
 
-		GAIA_ASSERT(srcScenePass->rtvs().size() <= gaia_max_color_attment_count);
-		uint32_t rtvCount = srcScenePass->rtvs().size();
+		GAIA_ASSERT(srcScenePass->cavs().size() <= gaia_max_color_attment_count);
+		uint32_t rtvCount = srcScenePass->cavs().size();
 		if(gaia_max_color_attment_count < rtvCount)
 		{
 			RenderGraphTranslator::DiagnosticItem error;
@@ -419,8 +501,8 @@ namespace
 		dstScenePass->m_beginRendering.m_renderingInfo.colorAttachmentCount = rtvCount;
 		for (uint32_t i = 0; i < rtvCount; ++i)
 		{
-			auto& rtv = srcScenePass->rtvs()[i];
-			RtvInfo rtvInfo = GetRenderTargetView(diagnosticInfo, passIndex, resourceMap, resourceViewMap, dstRenderGraph, srcRenderGraph, rtv, renderSystem);
+			auto& cav = srcScenePass->cavs()[i];
+			RtvInfo rtvInfo = GetRenderTargetView(diagnosticInfo, passIndex, resourceMap, resourceViewMap, dstRenderGraph, srcRenderGraph, cav.rtv, renderSystem);
 			if (invalid_resource_view != rtvInfo.viewIndex)
 			{
 				auto& colorAttachmentInfo = dstScenePass->m_beginRendering.m_colorAttachmentInfos[i];
@@ -429,18 +511,19 @@ namespace
 				renderHeight = std::min(renderHeight, rtvInfo.height);
 			}
 		}
-		auto& dsv = srcScenePass->dsv();
+		auto& dsav = srcScenePass->dsav();
+		auto& dsv = dsav.dsv;
 		if (dsv.resource != invalid_resource)
 		{
 			DsvInfo dsvInfo = GetDepthStencilView(diagnosticInfo, passIndex, resourceMap, resourceViewMap, dstRenderGraph, srcRenderGraph, dsv, renderSystem);
 			if (invalid_resource_view != dsvInfo.viewIndex)
 			{
 				dstScenePass->m_beginRendering.m_depthStencilAttachmentInfo.imageView = dstRenderGraph->m_imageViews[dsvInfo.viewIndex];
-				dstScenePass->m_beginRendering.m_depthStencilAttachmentInfo.imageLayout = dsv.usageDesc.readOnly ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-				dstScenePass->m_beginRendering.m_depthStencilAttachmentInfo.loadOp = MappingAttchmentLoadOp(dsv.usageDesc.loadOp);
-				dstScenePass->m_beginRendering.m_depthStencilAttachmentInfo.storeOp = MappingAttchmentStoreOp(dsv.usageDesc.storeOp);
+				dstScenePass->m_beginRendering.m_depthStencilAttachmentInfo.imageLayout = dsv.desc.readOnly ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+				dstScenePass->m_beginRendering.m_depthStencilAttachmentInfo.loadOp = MappingAttchmentLoadOp(dsv.desc.loadOp);
+				dstScenePass->m_beginRendering.m_depthStencilAttachmentInfo.storeOp = MappingAttchmentStoreOp(dsv.desc.storeOp);
 
-				VkImageAspectFlags aspectMask = MapTextureAspect(dsv.usageDesc.format);
+				VkImageAspectFlags aspectMask = MapTextureAspect(dsv.desc.format);
 				if (0 == (aspectMask & VK_IMAGE_ASPECT_DEPTH_BIT))
 				{
 					dstScenePass->m_beginRendering.m_renderingInfo.pDepthAttachment = nullptr;

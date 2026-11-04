@@ -453,4 +453,34 @@ void MapDepthStencilViewDesc(VkImageViewCreateInfo& dst, const DepthStencilViewD
 	dst.subresourceRange.layerCount = src.layerCount;
 }
 
+VkAttachmentLoadOp MappingAttchmentLoadOp(AttachmentLoadOp loadOp)
+{
+    switch (loadOp)
+    {
+    case AttachmentLoadOp::dont_care:
+        return VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    case AttachmentLoadOp::load:
+        return VK_ATTACHMENT_LOAD_OP_LOAD;
+    case AttachmentLoadOp::clear:
+        return VK_ATTACHMENT_LOAD_OP_CLEAR;
+    default:
+        GAIA_ASSERT(false);
+        return VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    }
+}
+
+VkAttachmentStoreOp MappingAttchmentStoreOp(AttachmentStoreOp storeOp)
+{
+    switch (storeOp)
+    {
+    case AttachmentStoreOp::dont_care:
+        return VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    case AttachmentStoreOp::store:
+        return VK_ATTACHMENT_STORE_OP_STORE;
+    default:
+        GAIA_ASSERT(false);
+        return VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    }
+}
+
 END_GAIA_VK1

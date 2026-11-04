@@ -169,7 +169,7 @@ public:
 			m_colorAttachmentInfos[i].imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 			m_colorAttachmentInfos[i].resolveMode = VK_RESOLVE_MODE_NONE;
 			m_colorAttachmentInfos[i].resolveImageView = VK_NULL_HANDLE;
-			m_colorAttachmentInfos[i].resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+			m_colorAttachmentInfos[i].resolveImageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 			m_colorAttachmentInfos[i].loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 			m_colorAttachmentInfos[i].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 		}
@@ -179,7 +179,7 @@ public:
 		m_depthStencilAttachmentInfo.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 		m_depthStencilAttachmentInfo.resolveMode = VK_RESOLVE_MODE_NONE;
 		m_depthStencilAttachmentInfo.resolveImageView = VK_NULL_HANDLE;
-		m_depthStencilAttachmentInfo.resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		m_depthStencilAttachmentInfo.resolveImageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 		m_depthStencilAttachmentInfo.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 		m_depthStencilAttachmentInfo.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 	}

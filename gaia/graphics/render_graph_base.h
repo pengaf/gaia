@@ -3,6 +3,7 @@
 #include "utility.h"
 #include "common.h"
 #include "hal/hal_fwd.h"
+#include "hal/resource.h"
 #include <vector>
 #include <string>
 #include <memory>
@@ -114,30 +115,32 @@ public:
 		unordered_access,
 		copy_src,
 		copy_dst,
-		resolve_src,
-		resolve_dst,
 		blit_src,
 		blit_dst,
 		mipmap_src,
 		mipmap_dst,
+		resolve_src,
+		resolve_dst,
 	};
 
 	struct ResourceBinding
 	{
 		uint32_t resource;
-		ResourceBindingKind usageKind;
+		ResourceBindingKind kind;
 	public:
-		ResourceBinding(ResourceBindingKind kind) : resource(invalid_resource), usageKind(kind) {};
-		ResourceBinding(uint32_t resource, ResourceBindingKind kind) : resource(resource), usageKind(kind) {};
+		ResourceBinding(ResourceBindingKind kind) : resource(invalid_resource), kind(kind) {};
+		ResourceBinding(uint32_t resource, ResourceBindingKind kind) : resource(resource), kind(kind) {};
 
 		bool isRead() const
 		{
-			switch (usageKind)
+			switch (kind)
 			{
+			case ResourceBindingKind::depth_stencil:
 			case ResourceBindingKind::shader_resource:
 			case ResourceBindingKind::copy_src:
-			case ResourceBindingKind::resolve_src:
+			case ResourceBindingKind::blit_src:
 			case ResourceBindingKind::mipmap_src:
+			case ResourceBindingKind::resolve_src:
 				return true;
 			}
 			return false;
@@ -145,15 +148,15 @@ public:
 
 		bool isWrite() const
 		{
-			switch (usageKind)
+			switch (kind)
 			{
 			case ResourceBindingKind::render_target:
 			case ResourceBindingKind::depth_stencil:
 			case ResourceBindingKind::unordered_access:
 			case ResourceBindingKind::copy_dst:
-			case ResourceBindingKind::resolve_dst:
 			case ResourceBindingKind::blit_dst:
 			case ResourceBindingKind::mipmap_dst:
+			case ResourceBindingKind::resolve_dst:
 				return true;
 			}
 			return false;
@@ -163,9 +166,9 @@ public:
 	template<ResourceBindingKind t_kind, typename Desc_t>
 	struct ResourceBinding_t : ResourceBinding
 	{
-		Desc_t usageDesc;
+		Desc_t desc;
 		ResourceBinding_t() : ResourceBinding(t_kind) {}
-		ResourceBinding_t(uint32_t resource, const Desc_t& desc) : ResourceBinding(resource, t_kind), usageDesc(desc) {}
+		ResourceBinding_t(uint32_t resource, const Desc_t& desc) : ResourceBinding(resource, t_kind), desc(desc) {}
 	};
 
 	using RTV = ResourceBinding_t<ResourceBindingKind::render_target, RenderTargetViewDesc>;
@@ -174,28 +177,41 @@ public:
 	using UAV = ResourceBinding_t<ResourceBindingKind::unordered_access, UnorderedAccessViewDesc>;
 	using CopySrc = ResourceBinding_t<ResourceBindingKind::copy_src, ResourceCopyDesc>;
 	using CopyDst = ResourceBinding_t<ResourceBindingKind::copy_dst, ResourceCopyDesc>;
+	using MRV = ResourceBinding_t<ResourceBindingKind::resolve_dst, MultisampleResolveViewDesc>;
+
+	struct CAV
+	{
+		RTV rtv;
+		MRV mrv;
+	};
+
+	struct DSAV
+	{
+		DSV dsv;
+		MRV mrv;
+	};
 
 	static bool ResourceBindingIsTexture(const ResourceBinding* binding)
 	{
-		switch (binding->usageKind)
+		switch (binding->kind)
 		{
 		case ResourceBindingKind::render_target:
 		case ResourceBindingKind::depth_stencil:
 			return true;
 		case ResourceBindingKind::shader_resource:
-			return static_cast<const SRV*>(binding)->usageDesc.resourceKind == ShaderResourceKind::texture;
+			return static_cast<const SRV*>(binding)->desc.resourceKind == ShaderResourceKind::texture;
 		case ResourceBindingKind::unordered_access:
-			return static_cast<const UAV*>(binding)->usageDesc.resourceKind == ShaderResourceKind::texture;
+			return static_cast<const UAV*>(binding)->desc.resourceKind == ShaderResourceKind::texture;
 		case ResourceBindingKind::copy_src:
-			return static_cast<const CopySrc*>(binding)->usageDesc.sideKind == ResourceCopySideKind::texture;
+			return static_cast<const CopySrc*>(binding)->desc.sideKind == ResourceCopySideKind::texture;
 		case ResourceBindingKind::copy_dst:
-			return static_cast<const CopyDst*>(binding)->usageDesc.sideKind == ResourceCopySideKind::texture;
-		case ResourceBindingKind::resolve_src:
-		case ResourceBindingKind::resolve_dst:
+			return static_cast<const CopyDst*>(binding)->desc.sideKind == ResourceCopySideKind::texture;
 		case ResourceBindingKind::blit_src:
 		case ResourceBindingKind::blit_dst:
 		case ResourceBindingKind::mipmap_src:
 		case ResourceBindingKind::mipmap_dst:
+		case ResourceBindingKind::resolve_src:
+		case ResourceBindingKind::resolve_dst:
 			return true;
 		default:
 			GAIA_ASSERT(false);
@@ -273,23 +289,40 @@ public:
 	public:
 		ScenePass(std::string_view name) : Pass<t_compiled>(name, RenderPassKind::scene_pass) {}
 	public:
-		void addRTV(uint32_t resource, const RenderTargetViewDesc& desc)
+		void addCAV(uint32_t resource, const RenderTargetViewDesc& desc)
 		{
-			m_rtvs.push_back({ resource, desc });
+			m_cavs.push_back({ { resource, desc } });
 		}
-		void setDSV(uint32_t resource, const DepthStencilViewDesc& desc)
+		void addCAV(uint32_t resource, const RenderTargetViewDesc& desc, uint32_t resolveResource, const MultisampleResolveViewDesc& resolveDesc)
 		{
-			m_dsv = { resource, desc };
+			m_cavs.push_back({ { resource, desc }, { resolveResource, resolveDesc } });
+		}
+		void setDSAV(uint32_t resource, const DepthStencilViewDesc& desc)
+		{
+			m_dsav = { {resource, desc} };
+		}
+		void setDSAV(uint32_t resource, const DepthStencilViewDesc& desc, uint32_t resolveResource, const MultisampleResolveViewDesc& resolveDesc)
+		{
+			m_dsav = { {resource, desc},  {resolveResource, resolveDesc} };
 		}
 		void collectResourceBindings(std::vector<const ResourceBinding*>& resourceBindings) const
 		{
-			for (auto& rtv : m_rtvs)
+			for (auto& cav : m_cavs)
 			{
-				resourceBindings.push_back(&rtv);
+				GAIA_ASSERT(invalid_resource != cav.rtv.resource);
+				resourceBindings.push_back(&cav.rtv);
+				if (invalid_resource != cav.mrv.resource)
+				{
+					resourceBindings.push_back(&cav.mrv);
+				}
 			}
-			if (invalid_resource != m_dsv.resource)
+			if (invalid_resource != m_dsav.dsv.resource)
 			{
-				resourceBindings.push_back(&m_dsv);
+				resourceBindings.push_back(&m_dsav.dsv);
+				if (invalid_resource != m_dsav.mrv.resource)
+				{
+					resourceBindings.push_back(&m_dsav.mrv);
+				}
 			}
 		}
 		void buildResourceBindings(const Pass<false>* srcPass, const std::vector<uint32_t>& resourceMap)
@@ -297,19 +330,33 @@ public:
 			if constexpr (t_compiled)
 			{
 				GAIA_ASSERT(srcPass->kind() == RenderPassKind::scene_pass);
-				GAIA_ASSERT(m_rtvs.empty());
-				GAIA_ASSERT(invalid_resource == m_dsv.resource);
+				GAIA_ASSERT(m_cavs.empty() && invalid_resource == m_dsav.dsv.resource);
 				auto* srcScenePass = static_cast<const ScenePass<false>*>(srcPass);
-				for (auto& rtv : srcScenePass->rtvs())
+				for (auto& cav : srcScenePass->cavs())
 				{
-					GAIA_ASSERT(rtv.resource < resourceMap.size());
-					addRTV(resourceMap[rtv.resource], rtv.usageDesc);
+					GAIA_ASSERT(cav.rtv.resource < resourceMap.size());
+					if (invalid_resource == cav.mrv.resource)
+					{
+						addCAV(resourceMap[cav.rtv.resource], cav.rtv.desc);
+					}
+					else
+					{
+						addCAV(resourceMap[cav.rtv.resource], cav.rtv.desc, cav.mrv.resource, cav.mrv.desc);
+					}
 				}
-				const DSV& dsv = srcScenePass->dsv();
-				if (invalid_resource != dsv.resource)
+				const DSAV& dsav = srcScenePass->dsav();
+				if (invalid_resource != dsav.dsv.resource)
 				{
-					GAIA_ASSERT(dsv.resource < resourceMap.size());
-					setDSV(resourceMap[dsv.resource], dsv.usageDesc);
+					GAIA_ASSERT(dsav.dsv.resource < resourceMap.size());
+					if (invalid_resource == dsav.mrv.resource)
+					{
+						setDSAV(resourceMap[dsav.dsv.resource], dsav.dsv.desc);
+					}
+					else
+					{
+						GAIA_ASSERT(dsav.mrv.resource < resourceMap.size());
+						setDSAV(resourceMap[dsav.dsv.resource], dsav.dsv.desc, dsav.mrv.resource, dsav.mrv.desc);
+					}
 				}
 			}
 			else
@@ -318,8 +365,8 @@ public:
 			}
 		}
 	public:
-		GAIA_ARG_RO(std::vector<RTV>, rtvs);
-		GAIA_ARG_RO(DSV, dsv);
+		GAIA_ARG_RO(std::vector<CAV>, cavs);
+		GAIA_ARG_RO(DSAV, dsav);
 	};
 
 	//template<bool t_compiled>
@@ -375,12 +422,12 @@ public:
 				for (auto& srv : srcImagePass->srvs())
 				{
 					GAIA_ASSERT(srv.resource < resourceMap.size());
-					addSRV(resourceMap[srv.resource], srv.usageDesc);
+					addSRV(resourceMap[srv.resource], srv.desc);
 				}
 				for (auto& rtv : srcImagePass->rtvs())
 				{
 					GAIA_ASSERT(rtv.resource < resourceMap.size());
-					addRTV(resourceMap[rtv.resource], rtv.usageDesc);
+					addRTV(resourceMap[rtv.resource], rtv.desc);
 				}
 			}
 			else
@@ -438,12 +485,12 @@ public:
 				for (auto& srv : srcComputePass->srvs())
 				{
 					GAIA_ASSERT(srv.resource < resourceMap.size());
-					addSRV(resourceMap[srv.resource], srv.usageDesc);
+					addSRV(resourceMap[srv.resource], srv.desc);
 				}
 				for (auto& uav : srcComputePass->uavs())
 				{
 					GAIA_ASSERT(uav.resource < resourceMap.size());
-					addUAV(resourceMap[uav.resource], uav.usageDesc);
+					addUAV(resourceMap[uav.resource], uav.desc);
 				}
 			}
 			else
@@ -496,12 +543,12 @@ public:
 				for (auto& srv : srcRayTracingPass->srvs())
 				{
 					GAIA_ASSERT(srv.resource < resourceMap.size());
-					addSRV(resourceMap[srv.resource], srv.usageDesc);
+					addSRV(resourceMap[srv.resource], srv.desc);
 				}
 				for (auto& uav : srcRayTracingPass->uavs())
 				{
 					GAIA_ASSERT(uav.resource < resourceMap.size());
-					addUAV(resourceMap[uav.resource], uav.usageDesc);
+					addUAV(resourceMap[uav.resource], uav.desc);
 				}
 			}
 			else

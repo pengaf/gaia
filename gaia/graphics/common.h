@@ -463,6 +463,25 @@ public:
     bool operator==(const DepthStencilViewDesc& other) const = default;
 };
 
+enum class ResolveMode : uint8_t
+{
+    average,
+    min,
+    max,
+};
+
+struct MultisampleResolveViewDesc
+{
+    TextureViewDimension dimension = TextureViewDimension::texture_view_2d;
+    TextureFormat format = TextureFormat::unknown;
+    uint32_t mipLevel = 0;
+    uint32_t baseArrayLayer = 0;
+    uint32_t layerCount = 1;
+    ResolveMode resolveMode = ResolveMode::average;
+public:
+    bool operator==(const MultisampleResolveViewDesc& other) const = default;
+};
+
 enum class ShaderResourceKind : uint8_t
 {
     texture,
