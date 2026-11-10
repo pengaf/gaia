@@ -43,13 +43,20 @@ namespace
 			h = pafcore::fnv1a_64(key.desc.mipLevel, h);
 			h = pafcore::fnv1a_64(key.desc.baseArrayLayer, h);
 			h = pafcore::fnv1a_64(key.desc.layerCount, h);
-			h = pafcore::fnv1a_64(key.desc.loadOp, h);
-			h = pafcore::fnv1a_64(key.desc.storeOp, h);
-			h = pafcore::fnv1a_64(key.desc.clearColor.r, h);
-			h = pafcore::fnv1a_64(key.desc.clearColor.g, h);
-			h = pafcore::fnv1a_64(key.desc.clearColor.b, h);
-			h = pafcore::fnv1a_64(key.desc.clearColor.a, h);
 			return (size_t)h;
+		}
+	};
+
+	struct RtvKeyEqual
+	{
+		bool operator()(const RtvKey& lhs, const RtvKey& rhs) const
+		{
+			return lhs.image == rhs.image 
+				&& lhs.desc.dimension == rhs.desc.dimension
+				&& lhs.desc.format == rhs.desc.format
+				&& lhs.desc.mipLevel == rhs.desc.mipLevel
+				&& lhs.desc.baseArrayLayer == rhs.desc.baseArrayLayer
+				&& lhs.desc.layerCount == rhs.desc.layerCount;
 		}
 	};
 
@@ -70,12 +77,20 @@ namespace
 			h = pafcore::fnv1a_64(key.desc.mipLevel, h);
 			h = pafcore::fnv1a_64(key.desc.baseArrayLayer, h);
 			h = pafcore::fnv1a_64(key.desc.layerCount, h);
-			h = pafcore::fnv1a_64(key.desc.loadOp, h);
-			h = pafcore::fnv1a_64(key.desc.storeOp, h);
-			h = pafcore::fnv1a_64(key.desc.readOnly, h);
-			h = pafcore::fnv1a_64(key.desc.clearStencilValue, h);
-			h = pafcore::fnv1a_64(key.desc.clearDepthValue, h);
 			return (size_t)h;
+		}
+	};
+
+	struct DsvKeyEqual
+	{
+		bool operator()(const DsvKey& lhs, const DsvKey& rhs) const
+		{
+			return lhs.image == rhs.image
+				&& lhs.desc.dimension == rhs.desc.dimension
+				&& lhs.desc.format == rhs.desc.format
+				&& lhs.desc.mipLevel == rhs.desc.mipLevel
+				&& lhs.desc.baseArrayLayer == rhs.desc.baseArrayLayer
+				&& lhs.desc.layerCount == rhs.desc.layerCount;
 		}
 	};
 
@@ -96,10 +111,23 @@ namespace
 			h = pafcore::fnv1a_64(key.desc.mipLevel, h);
 			h = pafcore::fnv1a_64(key.desc.baseArrayLayer, h);
 			h = pafcore::fnv1a_64(key.desc.layerCount, h);
-			h = pafcore::fnv1a_64(key.desc.resolveMode, h);
 			return (size_t)h;
 		}
 	};
+
+	struct MrvKeyEqual
+	{
+		bool operator()(const MrvKey& lhs, const MrvKey& rhs) const
+		{
+			return lhs.image == rhs.image
+				&& lhs.desc.dimension == rhs.desc.dimension
+				&& lhs.desc.format == rhs.desc.format
+				&& lhs.desc.mipLevel == rhs.desc.mipLevel
+				&& lhs.desc.baseArrayLayer == rhs.desc.baseArrayLayer
+				&& lhs.desc.layerCount == rhs.desc.layerCount;
+		}
+	};
+
 
 	struct TextureSrvUavKey
 	{
@@ -158,9 +186,9 @@ namespace
 
 	struct ResourceViewMap
 	{
-		std::unordered_map<RtvKey, RtvInfo, RtvKeyHash> rtvMap;
-		std::unordered_map<DsvKey, DsvInfo, DsvKeyHash> dsvMap;
-		std::unordered_map<MrvKey, uint32_t, MrvKeyHash> mrvMap;
+		std::unordered_map<RtvKey, RtvInfo, RtvKeyHash, RtvKeyEqual> rtvMap;
+		std::unordered_map<DsvKey, DsvInfo, DsvKeyHash, DsvKeyEqual> dsvMap;
+		std::unordered_map<MrvKey, uint32_t, MrvKeyHash, MrvKeyEqual> mrvMap;
 		std::unordered_map<TextureSrvUavKey, uint32_t, TextureSrvUavKeyHash> textureSrvUavMap;
 		std::unordered_map<TexelBufferSrvUavKey, uint32_t, TexelBufferSrvUavKeyHash> texelBufferSrvMap;
 	};
@@ -413,63 +441,59 @@ namespace
 		}
 	}
 
-	//uint32_t GetMultisampleResolveView(
-	//	RenderGraphTranslator::DiagnosticInfo& diagnosticInfo,
-	//	uint32_t passIndex,
-	//	const ResourceMap& resourceMap,
-	//	ResourceViewMap& resourceViewMap,
-	//	ExecutableRenderGraph* dstRenderGraph,
-	//	const CompiledRenderGraph* srcRenderGraph,
-	//	const CompiledRenderGraph::MRV& mrv,
-	//	RenderSystem* renderSystem)
-	//{
-	//	DsvInfo dsvInfo;
-	//	TextureInfo textureInfo = GetImageFromResourceIndex(diagnosticInfo, passIndex, resourceMap, dstRenderGraph, srcRenderGraph, dsv.resource);
-	//	if (VK_NULL_HANDLE == textureInfo.image)
-	//	{
-	//		return invalid_resource_view;
-	//	}
-
-	//	MrvKey mvrKey = { textureInfo.image, mrv.desc };
-	//	auto it = resourceViewMap.mrvMap.find(mvrKey);
-	//	if (resourceViewMap.mrvMap.end() == it)
-	//	{
-	//		VkDevice device = renderSystem->device();
-	//		VkImageViewCreateInfo createInfo;
-	//		MapDepthStencilViewDesc(createInfo, dsv.desc, textureInfo.image);
-	//		if ((createInfo.subresourceRange.aspectMask & (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT)) == 0)
-	//		{
-	//			RenderGraphTranslator::DiagnosticItem error;
-	//			error.code = RenderGraphTranslator::DiagnosticCode::error_invalid_dsv_format;
-	//			error.pass = passIndex;
-	//			error.resource = dsv.resource;
-	//			diagnosticInfo.addError(error);
-	//			return dsvInfo;
-	//		}
-	//		VkImageView imageView;
-	//		VkResult result = vkCreateImageView(device, &createInfo, nullptr, &imageView);
-	//		if (VK_SUCCESS != result)
-	//		{
-	//			RenderGraphTranslator::DiagnosticItem error;
-	//			error.code = RenderGraphTranslator::DiagnosticCode::error_create_image_view_failed;
-	//			error.pass = passIndex;
-	//			error.resource = dsv.resource;
-	//			diagnosticInfo.addError(error);
-	//			return dsvInfo;
-	//		}
-	//		uint32_t viewIndex = dstRenderGraph->m_imageViews.size();
-	//		dstRenderGraph->m_imageViews.push_back(imageView);
-	//		dsvInfo.viewIndex = viewIndex;
-	//		dsvInfo.width = std::max(1u, textureInfo.desc->width >> dsv.desc.mipLevel);
-	//		dsvInfo.height = std::max(1u, textureInfo.desc->height >> dsv.desc.mipLevel);
-	//		resourceViewMap.dsvMap.insert(std::make_pair(dsvKey, dsvInfo));
-	//		return dsvInfo;
-	//	}
-	//	else
-	//	{
-	//		return it->second;
-	//	}
-	//}
+	uint32_t GetMultisampleResolveView(
+		RenderGraphTranslator::DiagnosticInfo& diagnosticInfo,
+		uint32_t passIndex,
+		const ResourceMap& resourceMap,
+		ResourceViewMap& resourceViewMap,
+		ExecutableRenderGraph* dstRenderGraph,
+		const CompiledRenderGraph* srcRenderGraph,
+		const CompiledRenderGraph::MRV& mrv,
+		VkImageAspectFlags aspectMask,
+		RenderSystem* renderSystem)
+	{
+		TextureInfo textureInfo = GetImageFromResourceIndex(diagnosticInfo, passIndex, resourceMap, dstRenderGraph, srcRenderGraph, mrv.resource);
+		if (VK_NULL_HANDLE == textureInfo.image)
+		{
+			return invalid_resource_view;
+		}
+		MrvKey mvrKey = { textureInfo.image, mrv.desc };
+		auto it = resourceViewMap.mrvMap.find(mvrKey);
+		if (resourceViewMap.mrvMap.end() == it)
+		{
+			VkDevice device = renderSystem->device();
+			VkImageViewCreateInfo createInfo;
+			MapMultisampleResolveViewDesc(createInfo, mrv.desc, textureInfo.image);
+			if ((createInfo.subresourceRange.aspectMask & aspectMask) != aspectMask)
+			{
+				RenderGraphTranslator::DiagnosticItem error;
+				error.code = RenderGraphTranslator::DiagnosticCode::error_invalid_mrv_format;
+				error.pass = passIndex;
+				error.resource = mrv.resource;
+				diagnosticInfo.addError(error);
+				return invalid_resource_view;
+			}
+			VkImageView imageView;
+			VkResult result = vkCreateImageView(device, &createInfo, nullptr, &imageView);
+			if (VK_SUCCESS != result)
+			{
+				RenderGraphTranslator::DiagnosticItem error;
+				error.code = RenderGraphTranslator::DiagnosticCode::error_create_image_view_failed;
+				error.pass = passIndex;
+				error.resource = mrv.resource;
+				diagnosticInfo.addError(error);
+				return invalid_resource_view;
+			}
+			uint32_t viewIndex = dstRenderGraph->m_imageViews.size();
+			dstRenderGraph->m_imageViews.push_back(imageView);
+			resourceViewMap.mrvMap.insert(std::make_pair(mvrKey, viewIndex));
+			return viewIndex;
+		}
+		else
+		{
+			return it->second;
+		}
+	}
 
 
 	void BuildScenePass(
@@ -505,8 +529,19 @@ namespace
 			RtvInfo rtvInfo = GetRenderTargetView(diagnosticInfo, passIndex, resourceMap, resourceViewMap, dstRenderGraph, srcRenderGraph, cav.rtv, renderSystem);
 			if (invalid_resource_view != rtvInfo.viewIndex)
 			{
-				auto& colorAttachmentInfo = dstScenePass->m_beginRendering.m_colorAttachmentInfos[i];
-				colorAttachmentInfo.imageView = dstRenderGraph->m_imageViews[rtvInfo.viewIndex];
+				VkRenderingAttachmentInfo& attachmentInfo = dstScenePass->m_beginRendering.m_colorAttachmentInfos[i];
+				attachmentInfo.imageView = dstRenderGraph->m_imageViews[rtvInfo.viewIndex];
+				attachmentInfo.loadOp = MappingAttchmentLoadOp(cav.rtv.desc.loadOp);
+				attachmentInfo.storeOp = MappingAttchmentStoreOp(cav.rtv.desc.storeOp);
+				if (invalid_resource != cav.mrv.resource)
+				{
+					attachmentInfo.resolveMode = MapResolveMode(cav.mrv.desc.resolveMode);
+					uint32_t resolveViewIndex = GetMultisampleResolveView(diagnosticInfo, passIndex, resourceMap, resourceViewMap, dstRenderGraph, srcRenderGraph, cav.mrv, VK_IMAGE_ASPECT_COLOR_BIT, renderSystem);
+					if (invalid_resource_view != resolveViewIndex)
+					{
+						attachmentInfo.resolveImageView = dstRenderGraph->m_imageViews[resolveViewIndex];
+					}
+				}
 				renderWidth = std::min(renderWidth, rtvInfo.width);
 				renderHeight = std::min(renderHeight, rtvInfo.height);
 			}
@@ -518,10 +553,11 @@ namespace
 			DsvInfo dsvInfo = GetDepthStencilView(diagnosticInfo, passIndex, resourceMap, resourceViewMap, dstRenderGraph, srcRenderGraph, dsv, renderSystem);
 			if (invalid_resource_view != dsvInfo.viewIndex)
 			{
-				dstScenePass->m_beginRendering.m_depthStencilAttachmentInfo.imageView = dstRenderGraph->m_imageViews[dsvInfo.viewIndex];
-				dstScenePass->m_beginRendering.m_depthStencilAttachmentInfo.imageLayout = dsv.desc.readOnly ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-				dstScenePass->m_beginRendering.m_depthStencilAttachmentInfo.loadOp = MappingAttchmentLoadOp(dsv.desc.loadOp);
-				dstScenePass->m_beginRendering.m_depthStencilAttachmentInfo.storeOp = MappingAttchmentStoreOp(dsv.desc.storeOp);
+				VkRenderingAttachmentInfo& attattachmentInfo = dstScenePass->m_beginRendering.m_depthStencilAttachmentInfo;
+				attattachmentInfo.imageView = dstRenderGraph->m_imageViews[dsvInfo.viewIndex];
+				attattachmentInfo.imageLayout = dsv.desc.readOnly ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+				attattachmentInfo.loadOp = MappingAttchmentLoadOp(dsv.desc.loadOp);
+				attattachmentInfo.storeOp = MappingAttchmentStoreOp(dsv.desc.storeOp);
 
 				VkImageAspectFlags aspectMask = MapTextureAspect(dsv.desc.format);
 				if (0 == (aspectMask & VK_IMAGE_ASPECT_DEPTH_BIT))
@@ -531,6 +567,15 @@ namespace
 				if (0 == (aspectMask & VK_IMAGE_ASPECT_STENCIL_BIT))
 				{
 					dstScenePass->m_beginRendering.m_renderingInfo.pStencilAttachment = nullptr;
+				}
+				if (invalid_resource != dsav.mrv.resource)
+				{
+					attattachmentInfo.resolveMode = MapResolveMode(dsav.mrv.desc.resolveMode);
+					uint32_t resolveViewIndex = GetMultisampleResolveView(diagnosticInfo, passIndex, resourceMap, resourceViewMap, dstRenderGraph, srcRenderGraph, dsav.mrv, aspectMask, renderSystem);
+					if (invalid_resource_view != resolveViewIndex)
+					{
+						attattachmentInfo.resolveImageView = dstRenderGraph->m_imageViews[resolveViewIndex];
+					}
 				}
 				renderWidth = std::min(renderWidth, dsvInfo.width);
 				renderHeight = std::min(renderHeight, dsvInfo.height);
@@ -730,6 +775,27 @@ namespace
 			}
 		}
 	}
+
+
+
+	void BuildBarriers(
+		RenderGraphTranslator::DiagnosticInfo& diagnosticInfo,
+		ExecutableRenderGraph* dstRenderGraph,
+		const CompiledRenderGraph* srcRenderGraph,
+		RenderSystem* renderSystem)
+	{
+		uint32_t passCount = srcRenderGraph->passCount();
+		for (uint32_t passIndex = 0; passIndex < passCount; ++passIndex)
+		{
+			const CompiledRenderGraph::Pass* srcPass = srcRenderGraph->pass(passIndex);
+			auto& transitions = srcPass->transitions();
+			for(auto& transition : transitions)
+			{
+
+			}
+		}
+	}
+
 }
 
 RenderGraphTranslator::DiagnosticInfo RenderGraphTranslator::translate(ExecutableRenderGraph* executableRenderGraph, const CompiledRenderGraph* compiledRenderGraph, RenderSystem* renderSystem)
@@ -743,6 +809,11 @@ RenderGraphTranslator::DiagnosticInfo RenderGraphTranslator::translate(Executabl
 	}
 	ResourceViewMap resourceViewMap;
 	BuildPasses(diagnosticInfo, executableRenderGraph, compiledRenderGraph, resourceMap, resourceViewMap, renderSystem);
+	if (!diagnosticInfo.errors.empty())
+	{
+		return diagnosticInfo;
+	}
+
 	return diagnosticInfo;
 }
 

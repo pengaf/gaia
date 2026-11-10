@@ -21,6 +21,8 @@ public:
 	public:
 		GAIA_ARG_RO_VAL(RenderPassKind, kind);
 		GAIA_ARG(std::string, name);
+	public:
+		BarrierCommandSet m_barrierSet;
 	};
 
 	class ScenePass : public Pass
@@ -36,7 +38,6 @@ public:
 			vkCmdEndRendering(commandBuffer);
 		}
 	public:
-		BarrierCommandSet m_barrierSet;
 		BeginRenderingCommand m_beginRendering;
 	};
 
@@ -53,7 +54,6 @@ public:
 			vkCmdEndRendering(commandBuffer);
 		}
 	public:
-		BarrierCommandSet m_barrierSet;
 		BeginRenderingCommand m_beginRendering;
 		BindPipelineCommand<VK_PIPELINE_BIND_POINT_GRAPHICS> m_bindPipeline;
 		BindDescriptorSetsCommand<VK_PIPELINE_BIND_POINT_GRAPHICS> m_bindDescriptorSets;
@@ -71,7 +71,6 @@ public:
 			m_dispatch.execute(commandBuffer);
 		}
 	public:
-		BarrierCommandSet m_barrierSet;
 		BindPipelineCommand<VK_PIPELINE_BIND_POINT_COMPUTE> m_bindPipeline;
 		BindDescriptorSetsCommand<VK_PIPELINE_BIND_POINT_COMPUTE> m_bindDescriptorSets;
 		DispatchCommand m_dispatch;
@@ -88,7 +87,6 @@ public:
 			m_traceRays.execute(commandBuffer);
 		}
 	public:
-		BarrierCommandSet m_barrierSet;
 		BindPipelineCommand<VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR> m_bindPipeline;
 		BindDescriptorSetsCommand<VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR> m_bindDescriptorSets;
 		TraceRaysCommand m_traceRays;

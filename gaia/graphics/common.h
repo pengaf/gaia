@@ -389,6 +389,7 @@ struct TextureDesc
     uint32_t depth;
     uint32_t mipLevels;
     uint32_t arrayLayers;
+	uint32_t sampleCount;
     TextureDimension dimension;
     TextureFormat format;
     TextureUsage textureUsage;

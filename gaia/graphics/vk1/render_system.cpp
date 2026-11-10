@@ -602,7 +602,7 @@ TextureHandle RenderSystem::createTextureHandle(const TextureDesc& desc)
 	imageCreateInfo.extent = { desc.width, desc.height, desc.depth };
 	imageCreateInfo.mipLevels = desc.mipLevels;
 	imageCreateInfo.arrayLayers = desc.arrayLayers;
-	imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+	imageCreateInfo.samples = VkSampleCountFlagBits(desc.sampleCount);
 	imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
 	imageCreateInfo.usage = MapTextureUsage(desc.textureUsage);
 	imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;

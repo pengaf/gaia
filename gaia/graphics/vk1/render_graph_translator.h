@@ -19,6 +19,7 @@ public:
 		error_resource_is_not_texture,
 		error_invalid_rtv_format,
 		error_invalid_dsv_format,
+		error_invalid_mrv_format,
 
 		error_create_texture_failed,
 		error_create_buffer_failed,

@@ -423,6 +423,7 @@ namespace
 			h = pafcore::fnv1a_64(desc.depth, h);
 			h = pafcore::fnv1a_64(desc.mipLevels, h);
 			h = pafcore::fnv1a_64(desc.arrayLayers, h);
+			h = pafcore::fnv1a_64(desc.sampleCount, h);
 			h = pafcore::fnv1a_64(desc.dimension, h);
 			h = pafcore::fnv1a_64(desc.format, h);
 			h = pafcore::fnv1a_64(desc.textureUsage, h);

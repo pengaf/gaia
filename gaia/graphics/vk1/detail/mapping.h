@@ -15,12 +15,15 @@ VkImageType MapTextureDimension(TextureDimension dim);
 VkImageViewType MapTextureViewDimension(TextureViewDimension dim);
 
 VkAccessFlags MapBufferState(ResourceState state);
+
 void MapTextureState(VkAccessFlags& accessFlags, VkImageLayout& imageLayout, ResourceState state);
 void MapRenderTargetViewDesc(VkImageViewCreateInfo& dst, const RenderTargetViewDesc& src, VkImage image);
 void MapDepthStencilViewDesc(VkImageViewCreateInfo& dst, const DepthStencilViewDesc& src, VkImage image);
+void MapMultisampleResolveViewDesc(VkImageViewCreateInfo& dst, const MultisampleResolveViewDesc& src, VkImage image);
 
 VkAttachmentLoadOp MappingAttchmentLoadOp(AttachmentLoadOp loadOp);
 VkAttachmentStoreOp MappingAttchmentStoreOp(AttachmentStoreOp storeOp);
+VkResolveModeFlagBits MapResolveMode(ResolveMode resolveMode);
 
 
 END_GAIA_VK1
