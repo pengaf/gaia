@@ -22,7 +22,7 @@ target_sources(gaia
 
 target_sources(gaia PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/CMakeLists.txt)
 
-gaia_register_source_group("graphics/hal/Source Files" FILES ${source_files})
-gaia_register_source_group("graphics/hal/Header Files" FILES ${header_files})
-gaia_register_source_group("graphics/hal/Interface Files" FILES ${interface_files})
+gaia_register_source_group("graphics/hal/$Source Files" FILES ${source_files})
+gaia_register_source_group("graphics/hal/$Header Files" FILES ${header_files})
+gaia_register_source_group("graphics/hal/$Interface Files" FILES ${interface_files})
 gaia_register_source_group("graphics/hal" FILES ${CMAKE_CURRENT_SOURCE_DIR}/CMakeLists.txt)

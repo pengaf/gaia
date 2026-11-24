@@ -38,9 +38,9 @@ target_sources(gaia
             ${header_files}
 )
 
-gaia_register_source_group("Source Files" FILES ${source_files})
-gaia_register_source_group("Header Files" FILES ${header_files})
-gaia_register_source_group("Interface Files" FILES ${interface_files})
+gaia_register_source_group("$Source Files" FILES ${source_files})
+gaia_register_source_group("$Header Files" FILES ${header_files})
+gaia_register_source_group("$Interface Files" FILES ${interface_files})
 gaia_register_source_group("" FILES ${CMAKE_CURRENT_SOURCE_DIR}/CMakeLists.txt)
 
 target_compile_features(gaia PUBLIC cxx_std_20)
@@ -75,6 +75,7 @@ add_subdirectory(graphics)
 add_subdirectory(math)
 add_subdirectory(scene)
 add_subdirectory(spatial)
+add_subdirectory(storage)
 
 get_property(gaia_source_group_names GLOBAL PROPERTY GAIA_SOURCE_GROUP_NAMES)
 foreach(source_group_name IN LISTS gaia_source_group_names)

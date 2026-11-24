@@ -15,7 +15,7 @@ public:
 	virtual ~RenderOutput() = default;
 	virtual RenderTargetView* nextRenderTargetView() = 0;
 protected:
-	std::vector<RenderPass> m_renderPasses;
+	//std::vector<RenderPass> m_renderPasses;
 };
 
 END_GAIA

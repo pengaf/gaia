@@ -18,7 +18,7 @@ target_sources(gaia
 
 target_sources(gaia PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/CMakeLists.txt)
 
-gaia_register_source_group("math/Source Files" FILES ${source_files})
-gaia_register_source_group("math/Header Files" FILES ${header_files})
-gaia_register_source_group("math/Interface Files" FILES ${interface_files})
+gaia_register_source_group("math/$Source Files" FILES ${source_files})
+gaia_register_source_group("math/$Header Files" FILES ${header_files})
+gaia_register_source_group("math/$Interface Files" FILES ${interface_files})
 gaia_register_source_group("math" FILES ${CMAKE_CURRENT_SOURCE_DIR}/CMakeLists.txt)

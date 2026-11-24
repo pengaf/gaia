@@ -28,16 +28,6 @@ RefPtr<Buffer> Buffer::New(RenderSystem* renderSystem, const BufferDesc& desc)
 	if (bufferHandle.isValid())
 	{
 		return RefPtr<Buffer>(new Buffer(bufferHandle.buffer(), bufferHandle.allocation(), renderSystem, desc));
-        m_allocation = VK_NULL_HANDLE;
-    }
-}
-
-RefPtr<Buffer> Buffer::New(RenderSystem* renderSystem, const BufferDesc& desc)
-{
-    BufferHandle bufferHandle = renderSystem->createBufferHandle(desc);
-	if (bufferHandle.isValid())
-	{
-		return RefPtr<Buffer>(new Buffer(bufferHandle.buffer(), bufferHandle.allocation(), renderSystem, desc));
 	}
     else
     {

@@ -37,9 +37,9 @@ target_sources(gaia
             ${header_files}
 )
 
-gaia_register_source_group("graphics/vk1/Source Files" FILES ${source_files})
-gaia_register_source_group("graphics/vk1/Header Files" FILES ${header_files})
-gaia_register_source_group("graphics/vk1/Interface Files" FILES ${interface_files})
+gaia_register_source_group("graphics/vk1/$Source Files" FILES ${source_files})
+gaia_register_source_group("graphics/vk1/$Header Files" FILES ${header_files})
+gaia_register_source_group("graphics/vk1/$Interface Files" FILES ${interface_files})
 gaia_register_source_group("graphics/vk1" FILES ${CMAKE_CURRENT_SOURCE_DIR}/CMakeLists.txt)
 
 add_subdirectory(detail)

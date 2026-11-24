@@ -22,7 +22,7 @@ gaia_add_idlcpp_sources(gaia
     IMPORT_DIRECTORIES ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-gaia_register_source_group("scene/Source Files" FILES ${source_files})
-gaia_register_source_group("scene/Header Files" FILES ${header_files})
-gaia_register_source_group("scene/Interface Files" FILES ${interface_files})
+gaia_register_source_group("scene/$Source Files" FILES ${source_files})
+gaia_register_source_group("scene/$Header Files" FILES ${header_files})
+gaia_register_source_group("scene/$Interface Files" FILES ${interface_files})
 gaia_register_source_group("scene" FILES ${CMAKE_CURRENT_SOURCE_DIR}/CMakeLists.txt)

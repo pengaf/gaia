@@ -108,9 +108,9 @@ function(gaia_add_idlcpp_sources target)
             "${interface_directory}"
         )
         if(generated_group_directory STREQUAL "")
-            set(generated_group "Generated Files")
+            set(generated_group "$Generated Files")
         else()
-            set(generated_group "${generated_group_directory}/Generated Files")
+            set(generated_group "${generated_group_directory}/$Generated Files")
         endif()
         target_sources(${target} PRIVATE
             ${generated_header}
@@ -154,3 +154,4 @@ if(EMSCRIPTEN)
 endif()
 
 add_subdirectory(gaia)
+add_subdirectory(tests)
